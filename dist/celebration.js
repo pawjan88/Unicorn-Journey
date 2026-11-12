@@ -1,4 +1,4 @@
-const COLORS = ['#f5456f','#ff941f','#ffd32c','#1cbd92','#258cdb','#984ce6','#fce9a0'];
+const COLORS = ['#e7a3ae','#edb177','#efd284','#93bda3','#86b4ca','#b29dce','#f9df9a'];
 export class Celebration {
   constructor(canvas) {
     this.canvas = canvas;
@@ -48,7 +48,7 @@ export class Celebration {
       p.x += (p.vx + Math.sin(this.age * 3 + p.phase) * 14) * dt;
       p.y += p.vy * dt; p.rotation += p.spin * dt;
       if (p.life <= 0) continue;
-      c.save(); c.translate(Math.round(p.x/3)*3,Math.round(p.y/3)*3);c.rotate(Math.round(p.rotation/(Math.PI/2))*(Math.PI/2));
+      c.save(); c.translate(p.x,p.y);c.rotate(p.rotation);
       c.globalAlpha = Math.min(1, p.life) * (p.glitter ? .65 + Math.sin(this.age * 5 + p.phase) * .3 : .95);
       c.fillStyle = p.glitter ? '#fff0a3' : p.color;
       if (p.glitter) {

@@ -11,7 +11,7 @@ assert.equal(game.objects.filter(o=>o.type==='rainbow').length,50,'same collecti
 const obstacles=game.objects.filter(o=>o.type==='fence');assert.equal(obstacles.length,13);obstacles.forEach((o,i)=>assert.equal(o.obstacle,i%2?'log':'lava','lava and fallen logs alternate'));
 assert(game.objects.filter(o=>o.type==='troll').every(o=>o.species==='triceratops'));assert(game.objects.filter(o=>o.type==='dragon').every(o=>o.species==='diplodocus'));assert.equal(game.boss.species,'tyrannosaurus');assert.equal(game.boss.hp,3);
 assert(game.herds.every(h=>h.type==='dinosaur'));assert(game.witches.every(h=>h.type==='pterodactyl'),'no witches in dinosaur episode');
-for(const file of [...EPISODES.dino.trees,EPISODES.dino.panorama,'dino-triceratops.svg','dino-diplodocus.svg','dino-tyrannosaurus.svg','dino-small-0.svg','dino-small-1.svg','dino-pterodactyl.svg','dino-silhouette.svg','dragonfly.svg'])assert(fs.existsSync(new URL('../dist/assets/'+file,import.meta.url)));
+for(const id of ['forest','dino'])assert(fs.existsSync(new URL('../dist/assets/episode-'+id+'.png',import.meta.url)));
 const hashes={owady:'634569297486180c414154f6f20f0ed61fb7cbf200c76052410623e066e7158b',jungla:'d26b1a4126400ba3c9be497de8e4ade53dadf66a42c5de539f018f8da905c1c8',grzmoty:'3bbd3f651ece5e29853f35280759c0691e8f99f1c227cfe461759357bfa5a2c6'};
 for(const[name,hash]of Object.entries(hashes)){const data=fs.readFileSync(new URL('../dist/audio/'+name+'.mp3',import.meta.url));assert.equal(createHash('sha256').update(data).digest('hex'),hash,'uploaded audio preserved');}
 assert(fs.statSync(new URL('../dist/audio/dino-ambient.mp3',import.meta.url)).size>1000);

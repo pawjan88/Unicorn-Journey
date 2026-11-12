@@ -1,36 +1,32 @@
-# Odświeżenie Unicorn Journey — raport przeglądu
+# Unicorn Journey — low-poly 3D: raport testów
 
-Status: gotowe lokalnie do oceny właściciela. Nie opublikowano nowej wersji na GitHubie ani w innym hostingu.
+Status: gotowa wersja do testów właściciela, bez publikacji zmian na GitHubie.
 
-## Zmiany
+## Zakres zmiany
 
-- Spójny styl pixel art w obu epizodach: wspólna paleta 42 kolorów, ostre tekstury postaci, pikselowe ikony i konfetti, lokalna czcionka Pixelify Sans.
-- Nowe menu z obrazkowymi kartami epizodów i trzech koników; czytelny wybór, obsługa klawiatury, zwięzły HUD i zwijana pomoc.
-- Zachowane: perspektywa z siodła, kolory koników i rogów, oba epizody, 50 skarbów, skok, magia, stada, bossowie oraz automatyczne przejście do świata dinozaurów.
-- Galop powiązany z przebytą drogą, oddech przeciwników, ruch pterodaktyli i obrót głowy z widocznym pyskiem oraz okiem.
-- Poprawione cienie, nowy przestrzenny zamek i szerokie warstwy wzgórz podczas Galopu po Tęczy.
-- Osobna regulacja muzyki i efektów w pauzie, ogranicznik głośności, przyciszanie podkładu podczas efektów oraz ograniczona liczba jednoczesnych efektów. Przesłane pliki audio zachowano.
+- Wszystkie postacie i elementy środowiska zostały zastąpione przestrzennymi modelami z płaskim cieniowaniem: jednorożec w widoku z siodła, koniki stadne, zbrojne trolle, smoki, czarownice, dinozaury, pterodaktyle, drzewa, palmy, paprocie, skały, zamek, wulkan i jaskinia.
+- Głowa konika obraca się przestrzennie; oko i pysk są widoczne w skoku. Koniec magicznego promienia podąża za rzeczywistym położeniem roga.
+- Menu, HUD, ikony, konfetti i typografia zostały dostosowane do nowej oprawy. Karty wyboru są renderowane z tych samych modeli co w grze. Dołączono lokalną czcionkę Fredoka z licencją OFL.
+- Zachowano oba epizody, wybór trzech koników, 50 przedmiotów, pięć par przeszkód, stada, latające grupy, tęczowy galop, bossów wymagających trzech trafień i automatyczne przejście między epizodami.
+- Dostarczone MP3 i zasady rozgrywki pozostają zachowane.
 
-## Znalezione i naprawione problemy
+## Poprawki po testach
 
-1. Przy słabym renderowaniu gra zwalniała: klatka trwająca 200 ms przesuwała zegar tylko o 60 ms. Zwiększono limit nadganiania czasu, zachowując stały krok symulacji 120 Hz. Dodano test regresji.
-2. Rysowanie wielu osobnych fragmentów każdej tęczy i cieni w każdej klatce niepotrzebnie obciążało renderer. Tęcza korzysta teraz z jednej współdzielonej geometrii, a cienie aktualizują się wraz z przesuwaniem trasy.
-3. Pauza zatrzymywała reguły, ale część oprawy korzystała z czasu rzeczywistego. Teraz pauza zatrzymuje także zegar animacji i efektów.
-4. Zmiana epizodu zwalniała również tekstury przechowywane we wspólnym cache. Współdzielone tekstury są zachowywane; zasoby poprzedniej sceny są nadal zwalniane.
-5. Panorama podczas przelotu miała widoczny prostokątny brzeg. Zastąpiono ją szerokimi wzgórzami oraz zamkiem z geometrii 3D.
-6. Utrata kontekstu WebGL wymagała odświeżenia. Teraz wstrzymuje grę, a po odzyskaniu grafiki można wznowić zabawę.
-7. Powiadomienia mogły zasłaniać menu pauzy, a znak pauzy bywał wyświetlany jako pusty kwadrat. Poprawiono widoczność warstw i narysowano ikonę w CSS.
+- Puszczenie strzałki w górę lub rozpoczęcie skoku od razu zatrzymuje dźwięk kopyt, także przy wolniejszym renderowaniu.
+- Otoczenie połączono w duże grupy instancji; materiały powierzchni uproszczono do oświetlenia odpowiedniego dla stylu low-poly. Metalowe elementy zachowują połysk.
+- Rozdzielczość renderowania może łagodnie zmniejszyć się na wolniejszym urządzeniu; tekst menu pozostaje niezależną, ostrą warstwą DOM.
+- Początek tęczowego strzału jest wyświetlany co najmniej przez jedną klatkę i pozostaje na końcu obracającego się roga.
+- Poprzednie ilustracje i moduł pixel art usunięto z dystrybucji.
 
-## Wynik weryfikacji
+## Weryfikacja
 
-- `npm test`: 8 zestawów testów, 0 niepowodzeń.
-- `npm run test:browser`: 19 scenariuszy zakończonych powodzeniem; 21 zrzutów ekranu.
+- `npm test`: 8 zestawów, 0 niepowodzeń. Obejmuje reguły i pełne przejazdy obu epizodów, wejście, audio, animację, wybory, przejścia oraz budowę modeli 3D i ich palety.
+- `npm run test:browser`: 19 scenariuszy, 0 niepowodzeń; 21 zrzutów ekranu.
 - Końcowy przebieg: 0 błędów JavaScript i 0 nieudanych żądań zasobów.
-- Chromium w trybie headless z programowym renderowaniem WebGL; okna 1440 × 960 i 390 × 844 oraz pełny ekran.
-- Testy korzystają z prawdziwych zdarzeń klawiatury i sygnału Web Audio. Lokalne punkty kontrolne pozwalają szybko sprawdzić przeszkody, przelot, bossów i metę. Pełne przejazdy reguł są dodatkowo sprawdzane w testach symulacji.
-- To sprawdzenie Chromium; nie wykonano benchmarku na fizycznym komputerze gracza ani testów innych silników przeglądarek.
+- Chromium headless z programowym renderowaniem WebGL. Okna 1440 × 960 i 390 × 844 oraz tryb pełnego ekranu.
+- Scenariusze używają rzeczywistych klawiszy i sygnału Web Audio. Lokalne punkty kontrolne przyspieszają dotarcie do przeszkód, lotu, bossów i mety. To nie jest benchmark fizycznego komputera gracza ani test pozostałych silników przeglądarek.
 
-## Scenariusze przeglądarkowe
+## Scenariusze
 
 1. First actionable menu, local font, two episode cards and three horses
 2. Episode selection and all three coat/horn palettes
@@ -45,11 +41,11 @@ Status: gotowe lokalnie do oceny właściciela. Nie opublikowano nowej wersji na
 11. Forest boss needs three hits, then Episode 1 automatically continues into Episode 2
 12. Dinosaur lava jump and flying pterodactyl crossing
 13. Tyrannosaur, thunder music, three-hit boss, cave finish, confetti and replay
-14. Fullscreen resizes the pixel canvas, then restores the layout
+14. Fullscreen resizes the 3D canvas, then restores the layout
 15. WebGL context loss pauses safely and recovery permits continuing
 16. Keyboard navigation and return to menu preserve the selected horse
 17. Mobile menu has no horizontal overflow and Start stays reachable
 18. Reduced motion disables decorative UI transitions
 19. Normal URL exposes no QA controls
 
-Surowy raport i zrzuty: `artifacts/playtest/`. Wyniki są dołączone do lokalnej paczki ZIP, a katalog artefaktów jest wyłączony z Git.
+Zrzuty i surowy raport: `artifacts/playtest/`. Katalog artefaktów jest wyłączony z Git.

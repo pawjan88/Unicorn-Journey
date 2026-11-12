@@ -6,7 +6,7 @@ const http=require('node:http');
 const root=path.resolve(__dirname,'../dist');
 const output=path.resolve(process.env.PLAYTEST_OUTPUT||'artifacts/playtest');
 fs.mkdirSync(output,{recursive:true});
-const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.mp3':'audio/mpeg','.ttf':'font/ttf'};
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.mp3':'audio/mpeg','.ttf':'font/ttf','.png':'image/png'};
 const server=http.createServer((req,res)=>{
   const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
   const file=path.join(root,name==='/'?'index.html':name);
@@ -33,14 +33,14 @@ async function run(){
   await page.locator('#play:not([disabled])').waitFor({timeout:60000});
   await check('First actionable menu, local font, two episode cards and three horses',async()=>{
     assert.equal(await page.locator('.episode-option').count(),2);assert.equal(await page.locator('#horse-picker button').count(),3);
-    assert(await page.evaluate(()=>document.fonts.check('16px Pixelify')));assert.equal((await state()).audio.state,undefined);
+    assert(await page.evaluate(()=>document.fonts.check('16px Fredoka')));assert.equal((await state()).audio.state,undefined);
     assert(await page.locator('#play').evaluate(node=>{const rect=node.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight;}));await shot('01-menu-desktop');
   });
   await check('Episode selection and all three coat/horn palettes',async()=>{
     for(const horse of ['sunny','moon','rose']){await page.click('#horse-'+horse);assert.equal((await state()).horse,horse);assert.equal(await page.locator('#horse-'+horse).getAttribute('aria-pressed'),'true');}
     await page.click('#episode-dino');assert.equal((await state()).episode,'dino');await shot('02-menu-dinosaurs');
     await page.click('#episode-forest');assert.equal((await state()).horse,'rose');await page.click('#play');
-    await wait(()=>window.__unicornQA.snapshot().audio.buffers===12);await shot('03-forest');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===12);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
   });
   await check('Hold Up to ride, release to stop, steer both ways and respect path bounds',async()=>{
     const scroll=await page.evaluate(()=>scrollY);
@@ -51,7 +51,7 @@ async function run(){
   });
   await check('Space jumps, head shows face and eye, pause freezes the jump and effects',async()=>{
     await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().headFrame===2);
-    await page.keyboard.press('Escape');const held=await state();assert.equal(held.mode,'paused');assert(held.jumpHeight>.5);
+    await page.keyboard.press('Escape');const held=await state();assert.equal(held.mode,'paused');assert(held.jumpHeight>.5);assert(Math.abs(held.render.headAngle)>1,'the actual 3D head rotates towards the rider');
     await shot('04-head-turn-paused');await page.waitForTimeout(250);assert.equal((await state()).jumpTime,held.jumpTime);assert.equal((await state()).sceneTime,held.sceneTime);assert(!(await state()).audio.playing);
     await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().jumpTime===-1);
   });
@@ -99,8 +99,8 @@ async function run(){
     await page.keyboard.down('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);await page.keyboard.up('Control');
     await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('16-finish-confetti');assert(await page.locator('#again').isVisible());await page.click('#again');assert.equal((await state()).mode,'playing');assert.equal((await state()).distance,0);
   });
-  await check('Fullscreen resizes the pixel canvas, then restores the layout',async()=>{
-    await page.click('#fullscreen');await wait(()=>!!document.fullscreenElement);await shot('17-fullscreen');await page.click('#fullscreen');await wait(()=>!document.fullscreenElement);assert((await state()).render.width<=640);
+  await check('Fullscreen resizes the 3D canvas, then restores the layout',async()=>{
+    await page.click('#fullscreen');await wait(()=>!!document.fullscreenElement);await shot('17-fullscreen');await page.click('#fullscreen');await wait(()=>!document.fullscreenElement);assert((await state()).render.width<=1600);
   });
   await check('WebGL context loss pauses safely and recovery permits continuing',async()=>{
     await page.evaluate(()=>window.__unicornQA.loseContext());await wait(()=>window.__unicornQA.snapshot().mode==='paused');await page.waitForTimeout(300);await page.evaluate(()=>window.__unicornQA.restoreContext());await page.waitForTimeout(1000);await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().mode==='playing');await shot('18-context-recovered');

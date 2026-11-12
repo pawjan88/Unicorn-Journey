@@ -1,5 +1,5 @@
-import { HORSES } from './characters.js?v=7';
-import { EPISODES } from './episodes.js?v=9';
+import { HORSES } from './characters.js?v=12';
+import { EPISODES } from './episodes.js?v=12';
 export const RULES = Object.freeze({
   length:396, speed:4, halfWidth:2.1, riderRadius:.35, steerSpeed:2.45,
   jumpDuration:1.1, jumpHeight:1.2, fenceClearance:.54,

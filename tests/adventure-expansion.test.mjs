@@ -14,10 +14,8 @@ assert.equal(HORSES.length,3);
 for(const key of ['coat','hooves','horn'])assert.equal(new Set(HORSES.map(h=>h[key])).size,3,`three distinct ${key} colors`);
 for(const horse of HORSES){
  assert(game.selectHorse(horse.id));assert.equal(game.horseId,horse.id);
- const portrait=fs.readFileSync(new URL('../dist/assets/'+horse.portrait,import.meta.url),'utf8');
- const saddle=fs.readFileSync(new URL('../dist/assets/'+horse.saddle,import.meta.url),'utf8');
- assert(portrait.includes(horse.coat)&&portrait.includes(horse.hooves)&&portrait.includes(horse.horn));
- assert(saddle.includes(horse.coat)&&saddle.includes(horse.horn)&&saddle.includes(horse.hornShadow),'matching horn palette in first-person view');
+ const portrait=fs.readFileSync(new URL('../dist/assets/'+horse.portrait,import.meta.url));
+ assert.equal(portrait.subarray(1,4).toString(),'PNG','the selection card is rendered from a 3D model');
 }
 assert.equal(game.selectHorse('unknown'),false);const chosen=game.horseId;reset();assert.equal(game.horseId,chosen);assert.equal(game.selectHorse(HORSES[0].id),false,'cannot change horse mid-run');
 const pairs=new Map();game.objects.filter(o=>o.type==='fence'&&o.pair).forEach(f=>{if(!pairs.has(f.pair))pairs.set(f.pair,[]);pairs.get(f.pair).push(f);});assert.equal(pairs.size,5);

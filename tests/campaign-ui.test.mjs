@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import {Adventure,RULES} from '../dist/rules.js';
 import {HORSES} from '../dist/characters.js';
 import {EPISODES} from '../dist/episodes.js';
-import {prepareMenuArt} from '../dist/pixel-art.js';
 const elements=new Map(),listeners={};
 function element(){return {style:{},hidden:false,disabled:false,_html:'',textContent:'',attributes:{},
  get innerHTML(){return this._html;},
@@ -26,15 +25,15 @@ class Audio {
 class Confetti {constructor(){this.starts=0;}start(){this.starts++;}reset(){}update(){}}
 const context=vm.createContext({console,Math,Set,document:{querySelector:$,addEventListener:(type,fn)=>{listeners[type]=fn;}},window:{},addEventListener:(type,fn)=>{listeners[type]=fn;},requestAnimationFrame(){},setTimeout:()=>1,clearTimeout(){}});
 function synthetic(values){return new vm.SyntheticModule(Object.keys(values),function(){for(const[k,v]of Object.entries(values))this.setExport(k,v);},{context});}
-const modules={rules:synthetic({Adventure,RULES}),episodes:synthetic({EPISODES}),characters:synthetic({HORSES}),audio:synthetic({AdventureAudio:Audio}),celebration:synthetic({Celebration:Confetti}),forest:synthetic({MagicForest:Forest}),'pixel-art':synthetic({prepareMenuArt})};
+const modules={rules:synthetic({Adventure,RULES}),episodes:synthetic({EPISODES}),characters:synthetic({HORSES}),audio:synthetic({AdventureAudio:Audio}),celebration:synthetic({Celebration:Confetti}),forest:synthetic({MagicForest:Forest})};
 await modules.forest.link(()=>{});await modules.forest.evaluate();
 const source=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8')+'\nexport {game,keys,start,frame,forest,showStart,sound,confetti,pause,accumulator};';
 const app=new vm.SourceTextModule(source,{context,importModuleDynamically:async()=>modules.forest});
 await app.link(spec=>modules[Object.keys(modules).find(key=>spec.includes(key+'.js'))]);await app.evaluate();await new Promise(resolve=>setImmediate(resolve));
 const ui=app.namespace;
 assert.equal($('#episode-forest').attributes['aria-pressed'],'true');
-assert($('#episode-picker').innerHTML.includes('horse-option episode-option'));assert($('#episode-picker').innerHTML.includes('episode-forest.svg'));assert($('#episode-picker').innerHTML.includes('episode-dino.svg'));
-for(const id of ['forest','dino'])assert(fs.existsSync(new URL('../dist/assets/episode-'+id+'.svg',import.meta.url)));
+assert($('#episode-picker').innerHTML.includes('horse-option episode-option'));assert($('#episode-picker').innerHTML.includes('episode-forest.png'));assert($('#episode-picker').innerHTML.includes('episode-dino.png'));
+for(const id of ['forest','dino'])assert(fs.existsSync(new URL('../dist/assets/episode-'+id+'.png',import.meta.url)));
 $('#horse-moon').onclick();$('#episode-dino').onclick();assert.equal(ui.game.episodeId,'dino');assert.equal(ui.game.horseId,'moon');assert.equal($('#episode-dino').attributes['aria-pressed'],'true');assert.equal($('#episode-forest').attributes['aria-pressed'],'false');
 $('#episode-forest').onclick();ui.start();
 function key(code,type='keydown'){listeners[type]({code,repeat:false,preventDefault(){}});}

@@ -1,9 +1,8 @@
-import { Adventure, RULES } from './rules.js?v=9';
+import { Adventure, RULES } from './rules.js?v=12';
 import { AdventureAudio } from './audio.js?v=11';
-import { EPISODES } from './episodes.js?v=9';
-import { HORSES } from './characters.js?v=7';
-import { Celebration } from './celebration.js?v=4';
-import { prepareMenuArt } from './pixel-art.js?v=11';
+import { EPISODES } from './episodes.js?v=12';
+import { HORSES } from './characters.js?v=12';
+import { Celebration } from './celebration.js?v=12';
 const $ = selector => document.querySelector(selector);
 const keys = new Set();
 const input = { forward: false, steer: 0, fire: false };
@@ -82,6 +81,7 @@ function handleEvent(event) {
     forest?.fire(event);
     sound.effect('magic-shot', .44);
   } else if (event.type === 'jump') {
+    sound.stopHooves?.();
     sound.effect('neigh', .44);
   } else if (event.type === 'herdStart') {
     if(event.herd.type==='unicorn')sound.effect('neigh',.18,.94);
@@ -126,7 +126,6 @@ function refreshHorseChoices() {
   });
   const horse=HORSES.find(h=>h.id===game.horseId);
   $('#horse-badge').innerHTML = `<img src="assets/${horse.portrait}" alt=""><span>${horse.name}</span>`;
-  prepareMenuArt($('#horse-badge'));
 }
 function applyEpisodeUI() {
   const episode=game.episode;
@@ -145,13 +144,12 @@ function rebuildForest() {
   forest=new forest.constructor($('#world'),game.objects,game.herds,{witches:game.witches,horseId:game.horseId,episodeId:game.episodeId});
 }
 function bindStart() {
-  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img class="episode-image" src="assets/episode-${episode.id}.svg" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
+  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img class="episode-image" src="assets/episode-${episode.id}.png" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
   Object.values(EPISODES).forEach(episode=>{$('#episode-'+episode.id).onclick=()=>game.selectEpisode(episode.id);});
   $('#intro-copy').textContent=game.episode.intro;
   $('#horse-picker').innerHTML = HORSES.map(horse=>`<button type="button" class="horse-option" id="horse-${horse.id}" aria-label="Wybierz: ${horse.name}" aria-pressed="${game.horseId===horse.id}"><img src="assets/${horse.portrait}" alt=""><strong>${horse.name}</strong><span class="horse-colors" aria-hidden="true"><i style="background:${horse.coat}"></i><i style="background:${horse.hooves}"></i><i style="background:${horse.horn}"></i></span></button>`).join('');
   HORSES.forEach(horse=>{$('#horse-'+horse.id).onclick=()=>game.selectHorse(horse.id);});
   $('#play').onclick=start;$('#play').disabled=!forest;if(forest)$('#play').innerHTML='Ruszamy po przygodę! <span>→</span>';refreshHorseChoices();
-  prepareMenuArt(overlay);
 }
 function showStart() {
   pendingEpisode=null;keys.clear();sound.reset();confetti.reset();game.reset();forest.resetEffects();
@@ -185,7 +183,7 @@ addEventListener('keydown', event => {
   }
   if (event.code === 'Escape' && !event.repeat) pause();
 });
-addEventListener('keyup', event => keys.delete(event.code));
+addEventListener('keyup',event=>{keys.delete(event.code);if(event.code==='ArrowUp')sound.stopHooves?.();});
 addEventListener('blur', () => { keys.clear(); if (game.mode === 'playing') pause(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && game.mode === 'playing') pause(); });
 $('#world').addEventListener('webglcontextlost', event => {
@@ -221,7 +219,7 @@ function frame(timestamp) {
   confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=11').then(async ({ MagicForest }) => {
+import('./forest.js?v=12').then(async ({ MagicForest }) => {
   await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });
@@ -230,7 +228,7 @@ import('./forest.js?v=11').then(async ({ MagicForest }) => {
   requestAnimationFrame(frame);
 }).catch(error => {
   console.error('Nie udało się otworzyć magicznego lasu:', error);
-  overlay.innerHTML = '<div class="intro"><div class="pill">MAGICZNY LAS 3D</div><h2>Obudźmy las!</h2><p>Gra potrzebuje włączonej akceleracji graficznej (WebGL). Otwórz ją w aktualnym Chrome, Edge lub Firefox.</p><button class="primary" id="reload">Spróbuj ponownie ↻</button></div>';
+  overlay.innerHTML = '<div class="intro"><div class="pill">MAŁA WIELKA PRZYGODA</div><h2>Obudźmy las!</h2><p>Gra potrzebuje włączonej akceleracji graficznej (WebGL). Otwórz ją w aktualnym Chrome, Edge lub Firefox.</p><button class="primary" id="reload">Spróbuj ponownie ↻</button></div>';
   $('#reload').onclick = () => location.reload();
 });
 
@@ -238,7 +236,7 @@ import('./forest.js?v=11').then(async ({ MagicForest }) => {
 if(typeof location!=='undefined'&&['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).has('qa')){
   let contextExtension,meter;
   Object.defineProperty(window,'__unicornQA',{value:Object.freeze({
-    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls}}),
+    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls,triangles:forest?.renderer.info.render.triangles,headAngle:forest?.mount?.userData.head.rotation.y,quality:forest?.resolutionScale}}),
     checkpoint:(distance,x=0)=>{game.distance=distance;game.x=x;game.stun=0;game.jumpTime=-1;game.jumpHeight=0;game.objects.forEach(o=>{if(o.type!=='boss')o.done=o.z<distance-2;});[...game.herds,...game.witches].forEach(h=>{h.elapsed=-1;h.cleared=h.z<distance-12;});game.bonus.active=false;game.bonus.finished=distance>RULES.bonusEnd;game.bonus.elapsed=0;game.flightHeight=0;game.rocks=[];accumulator=0;forest?.resetEffects();},
     loseContext:()=>{contextExtension=forest.renderer.getContext().getExtension('WEBGL_lose_context');contextExtension?.loseContext();},
     restoreContext:()=>contextExtension?.restoreContext(),

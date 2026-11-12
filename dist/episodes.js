@@ -6,7 +6,7 @@ export const EPISODES = Object.freeze({
     scene:'✧ WIDOK Z SIODŁA · ZAKĄTEK TĘCZOWYCH MARZEŃ', bossName:'Strażnik mety',
     bossHint:'Omijaj kamienie i traf trolla trzy razy — Ctrl.', obstacleHint:'Dwa płotki? Dwa skoki.', enemyHint:'Omijaj trolle i smoki', shotHint:'Troll na mecie: 3 trafienia',
     endText:'Cały las świętuje razem z Tobą.', bonusName:'Galop po Tęczy',
-    trees:['tree-gold.svg','tree-blue.svg'], panorama:'sky-panorama.svg', fog:0xf4e5d3,
+    environment:'forest', landmark:'castle', fog:0xe0eadb,
   }),
   dino: Object.freeze({
     id:'dino', name:'Świat dinozaurów', edition:'ŚWIAT DINOZAURÓW • PRZYGODA 02',
@@ -15,6 +15,6 @@ export const EPISODES = Object.freeze({
     scene:'✧ WIDOK Z SIODŁA · DOLINA DINOZAURÓW', bossName:'Tyranozaur',
     bossHint:'Omijaj kamienie i traf tyranozaura trzy razy — Ctrl.', obstacleHint:'Przeskakuj lawę i pnie', enemyHint:'Omijaj dinozaury', shotHint:'Tyranozaur: 3 trafienia',
     endText:'Jaskinia odnaleziona! Dinozaury świętują razem z Tobą.', bonusName:'Galop po Tęczy',
-    trees:['dino-palm.svg','dino-fern.svg'], panorama:'dino-panorama.svg', fog:0xd7e5cb,
+    environment:'jungle', landmark:'volcano', fog:0xd4e2cc,
   }),
 });
