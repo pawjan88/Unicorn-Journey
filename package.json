@@ -1,0 +1,9 @@
+{
+  "name": "unicorn-journey",
+  "private": true,
+  "type": "module",
+  "description": "Unicorn Journey — przygoda jednorożca w magicznym lesie i świecie dinozaurów",
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs"
+  }
+}

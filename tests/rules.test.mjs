@@ -1,0 +1,71 @@
+import assert from 'node:assert/strict';
+import { Adventure, RULES } from '../dist/rules.js';
+const idle = { forward:false,steer:0 }, forward={forward:true,steer:0};
+const events=[];
+const game=new Adventure(e=>events.push(e));
+const tick=(seconds,input=idle,hz=120)=>{for(let i=0;i<Math.round(seconds*hz);i++)game.update(1/hz,input);};
+function restart(){events.length=0;game.start();}
+restart();
+assert.equal(game.objects.filter(o=>o.type==='rainbow').length,50);
+assert.equal(game.objects.filter(o=>o.type==='fence').length,13);
+assert.equal(game.objects.filter(o=>o.type==='troll').length,8);
+assert.equal(game.objects.filter(o=>o.type==='dragon').length,8);
+for(const troll of game.objects.filter(o=>o.type==='troll'))assert(game.objects.some(o=>o.type==='dragon'&&o.z===troll.z&&Math.abs(o.x-troll.x)>1.5),'dragon beside every troll');
+assert.equal(RULES.length / RULES.speed, (495 / 4) * 0.8, '20% shorter uninterrupted ride');
+assert(game.objects.every(o=>o.z<RULES.length),'all 50 rainbows and obstacles before finish');
+assert(RULES.speed>19*.15*1.35,'faster than previous version');
+assert(RULES.halfWidth<3*.75,'narrower route');
+assert(game.objects.every(o=>Math.abs(o.x)<RULES.halfWidth),'objects on path');
+tick(3);assert.equal(game.distance,0,'holding up required');
+tick(1,forward);assert(Math.abs(game.distance-RULES.speed)<1e-8);
+tick(2);assert(Math.abs(game.distance-RULES.speed)<1e-8,'release up stops');
+tick(10,{forward:false,steer:1});assert.equal(game.x,RULES.halfWidth-RULES.riderRadius);
+tick(10,{forward:false,steer:-1});assert.equal(game.x,-RULES.halfWidth+RULES.riderRadius);
+restart();game.jump();tick(RULES.jumpDuration/2);assert(Math.abs(game.jumpHeight-RULES.jumpHeight)<1e-8);game.jump();assert(game.jumpTime>.5,'no midair repeated jumps');tick(.6);assert.equal(game.jumpTime,-1);assert.equal(game.jumpHeight,0);
+restart();const r=game.objects[0];game.x=r.x;game.distance=r.z-.9;tick(.4,forward);assert.equal(game.count,1);tick(.4);assert.equal(events.filter(e=>e.type==='collect').length,1,'one count per rainbow');
+restart();let f=game.objects.find(o=>o.type==='fence');game.x=f.x;game.distance=f.z-.9;tick(.4,forward);assert(game.fenceBlocked,'fence blocks rider');assert.equal(f.done,false,'solid fence remains');assert.equal(events.some(e=>e.type==='bump'&&e.object===f),false,'no fence message event');const bumpDistance=game.distance;tick(3,forward);assert.equal(game.distance,bumpDistance,'holding up cannot walk through fence');game.x=RULES.halfWidth-RULES.riderRadius;tick(1,forward);assert.equal(game.distance,bumpDistance,'cannot go around full-width fence');game.jump();tick(1,forward);assert(game.distance>f.z+.4&&f.done,'jumping from a blocked stop clears fence');
+restart();f=game.objects.find(o=>o.type==='fence');game.x=f.x;game.distance=f.z-2.2;game.jump();tick(.7,forward);assert(events.some(e=>e.type==='cleared'));assert.equal(game.stun,0);
+restart();let t=game.objects.find(o=>o.type==='troll');game.distance=t.z-.9;game.x=t.x;game.jump();tick(.4,forward);assert(events.some(e=>e.type==='bump'),'cannot jump over troll');
+restart();t=game.objects.find(o=>o.type==='troll');game.distance=t.z-.9;game.x=t.x>0?-1.6:1.6;tick(.5,forward);assert.equal(game.stun,0,'troll can be avoided');
+game.pause();const before=game.distance;tick(2,forward);assert.equal(game.distance,before);game.resume();tick(.2,forward);assert(game.distance>before);
+restart();game.boss.done=true;game.boss.hp=0;game.distance=RULES.length-.1;tick(.2,forward);assert.equal(game.mode,'finished');assert.equal(game.count,0,'all rainbows optional');assert.equal(events.filter(e=>e.type==='finish').length,1);tick(1,forward);assert.equal(events.filter(e=>e.type==='finish').length,1);
+restart();assert.equal(game.count,0);assert.equal(game.distance,0);assert(game.objects.every(o=>!o.done));
+const one=new Adventure(),two=new Adventure();one.start();two.start();for(let i=0;i<120;i++)one.update(1/120,forward);for(let i=0;i<30;i++)two.update(1/30,forward);assert(Math.abs(one.distance-two.distance)<1e-8,'independent of FPS');
+console.log('PASS: 20% shorter route, paired dragons,  50 rainbows, +40% speed, narrower bounds, hold-to-move, release-to-stop, steering, jump, collection, fence jump/collision/recovery, troll collision/avoidance, pause/resume, optional collection, finish, replay, 30/120fps consistency');
+
+// Shooting only affects creatures in front of the rider's horn.
+restart();
+const firstTroll=game.objects.find(o=>o.type==='troll');
+game.x=firstTroll.x;game.distance=firstTroll.z-10;
+assert(game.shoot());assert(firstTroll.done&&firstTroll.destroyed);
+assert.equal(events.filter(e=>e.type==='shot').at(-1).target,firstTroll);
+assert.equal(game.count,0,'shooting cannot collect rainbows');
+assert.equal(game.shoot(),false,'shot cooldown');
+const dragon=game.objects.find(o=>o.type==='dragon'&&o.z===firstTroll.z);
+game.x=dragon.x;tick(.5);assert(game.shoot());assert(dragon.done&&dragon.destroyed);
+restart();f=game.objects.find(o=>o.type==='fence');
+game.distance=f.z-3;game.x=f.x;const rainbows=game.objects.filter(o=>o.type==='rainbow');game.shoot();
+assert.equal(f.done,false,'fences are immune');assert(rainbows.every(o=>!o.done),'rainbows are immune');assert.equal(game.count,0);
+restart();
+let creature=game.objects.find(o=>o.type==='troll');game.x=creature.x;game.distance=creature.z-RULES.shotRange-1;game.shoot();assert.equal(creature.done,false,'no out-of-range hits');
+restart();creature=game.objects.find(o=>o.type==='troll');game.distance=creature.z+1;game.x=creature.x;game.shoot();assert.equal(creature.done,false,'no hits behind rider');
+restart();creature=game.objects.find(o=>o.type==='troll');game.distance=creature.z-6;game.x=-1.75;game.shoot();assert.equal(creature.done,false,'steering aims the shot');
+restart();creature=game.objects.find(o=>o.type==='dragon');game.x=creature.x;game.distance=creature.z-.9;tick(.4,forward);assert(events.some(e=>e.type==='bump'&&e.object===creature),'dragon collides like troll');
+restart();const far={type:'troll',x:0,z:18,done:false},near={type:'dragon',x:0,z:8,done:false};game.objects=[far,near];game.shoot();assert(near.done);assert.equal(far.done,false,'nearest creature only');
+game.pause();tick(2,{forward:true,steer:0,fire:true});assert.equal(game.shoot(),false);assert.equal(far.done,false);game.resume();tick(.5,{forward:false,steer:0,fire:true});assert(far.done,'hold Ctrl fires again after cooldown');
+restart();assert.equal(game.shotCooldown,0);assert(game.objects.every(o=>!o.done&&!o.destroyed),'restart restores creatures');
+game.mode='finished';assert.equal(game.shoot(),false);game.mode='intro';assert.equal(game.shoot(),false);
+restart();game.objects.forEach(o=>{o.done=true;});[...game.herds,...game.witches].forEach(h=>{h.cleared=true;});game.bonus.finished=true;let elapsed=0;while(game.mode==='playing'&&elapsed<130){game.update(1/120,forward);elapsed+=1/120;}assert(Math.abs(elapsed-99)<=1/120+.00001,'99-second ride instead of 123.75 seconds');
+console.log('PASS: Ctrl shot, troll and dragon destruction, fence/rainbow immunity, no score change, cooldown, range, aiming, nearest target, paused/finished/intro guards, held firing, dragon collision, replay, 99-second uninterrupted ride');
+
+// Crossing herds advance while standing still, freeze on pause, and cannot be jumped or shot.
+restart();game.objects.forEach(o=>{o.done=true;});
+const herd=game.herds[0];game.distance=herd.z-RULES.herdTriggerDistance-.1;
+tick(2.5,forward);assert(herd.elapsed>0);assert.equal(game.distance,herd.z-RULES.herdStopDistance);assert(game.waitingForHerd);
+game.pause();const pausedElapsed=herd.elapsed;tick(5,forward);assert.equal(herd.elapsed,pausedElapsed,'pause freezes crossing');game.resume();
+game.jump();tick(1,{forward:true,steer:0,fire:true});assert.equal(game.distance,herd.z-RULES.herdStopDistance,'jump and spells cannot bypass herd');assert.equal(herd.cleared,false);
+tick(4,idle);assert(herd.cleared,'herd finishes even with up released');tick(1,forward);assert(game.distance>herd.z,'road opens once herd has passed');
+restart();assert(game.herds.every(h=>h.elapsed===-1&&!h.cleared),'replay resets all four herds');assert.equal(game.herds.length,4);
+let run=0;while(game.mode==='playing'&&run<150){const fence=game.objects.find(o=>o.type==='fence'&&!o.done&&o.z>game.distance);if(fence&&fence.z-game.distance<2.2&&game.jumpTime<0)game.jump();game.update(1/120,{forward:true,steer:0,fire:true});run+=1/120;}
+assert.equal(game.mode,'finished','full route with solid fences and all herds is completable');assert(game.herds.every(h=>h.cleared));assert(run>99&&run<150,'crossings add finite waiting time');
+console.log('PASS: persistent full-width fences, no fence message, jumping from standstill, four mandatory herds, pause-safe crossing clock, waiting without up, immunity to jump/spells, complete route with all new obstacles');

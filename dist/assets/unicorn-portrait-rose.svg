@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="650" viewBox="0 0 900 650">
+<ellipse cx="454" cy="589" rx="286" ry="23" fill="#273f61" opacity=".13"/>
+<path d="M252 363c-74-83-102-55-123-7-26 63-55 54-80 21 6 93 111 131 158 39z" fill="#a04cce"/>
+<path d="M234 363c-70-70-86-20-111 26-18 31-36 29-56 18 16 48 75 61 110 20z" fill="#ed4d87"/>
+<path d="M230 355c-59-44-57-12-86 26 26-11 56-21 87 3z" fill="#f09c25"/>
+<g fill="none" stroke="#bf6c9f" stroke-width="40" stroke-linecap="round"><path d="M310 441l-98 64-78-23m366-42 54 96 84 18"/></g>
+<g stroke="#864bc2" stroke-width="35" stroke-linecap="round"><path d="M138 482l-15-4m516 78 16 2"/></g>
+<path d="M249 345c56-58 188-69 303-35l98 63c-18 77-102 115-216 111-115-3-205-43-185-139z" fill="#f3a6c1"/>
+<path d="M287 417c98 8 159 57 260-3 30-19 55-43 65-65l38 24c-18 77-102 115-216 111-68-2-122-16-151-41z" fill="#bf6c9f"/>
+<path d="M489 344c40-70 60-123 77-174l111 30c-25 67-17 135-26 173-31 46-104 45-162-29z" fill="#f3a6c1"/>
+<path d="M586 201c-22 81 0 105-28 170 31 20 66 26 93 2 9-38 1-106 26-173z" fill="#bf6c9f"/>
+<path d="M592 149l5-91 65 65 27-72 25 91z" fill="#f3a6c1"/>
+<path d="M606 125l1-45 30 35m52 10 6-43 11 45" fill="#efa088"/>
+<path d="M686 136l75-93-39 116z" fill="#ce4ac9"/>
+<path d="M586 127c46-39 125-25 155 20l42 89c4 40-36 58-77 47l-52-40-68-23c-22-22-25-65 0-93z" fill="#f3a6c1"/>
+<path d="M706 283c41 11 81-7 77-47l-18-36-81 25z" fill="#bf6c9f"/>
+<path d="M647 164q21-17 38 2" fill="none" stroke="#864bc2" stroke-width="9" stroke-linecap="round"/>
+<ellipse cx="734" cy="234" rx="7" ry="5" fill="#6c7b8b"/>
+<path d="M747 264q17 4 25-5" fill="none" stroke="#9e7d78" stroke-width="5" stroke-linecap="round"/>
+<path d="M602 124c-74-48-119 32-106 77-66 15-78 63-45 104-65 32-63 74-35 102 61-17 96-56 96-113 41-25 50-71 38-113 8-29 28-44 52-57z" fill="#934ed1"/>
+<path d="M582 126c-65-8-74 50-52 78-48 19-63 48-40 80-33 15-49 53-55 84 52-39 67-70 63-103 36-20 41-49 35-76 1-27 18-50 49-63z" fill="#2f97d7"/>
+<path d="M564 125c-32 14-38 39-31 64-30 10-43 37-35 76 17-30 39-46 45-63-3-31 8-55 21-77z" fill="#27bb96"/>
+<g fill="none" stroke="#f3a6c1" stroke-width="40" stroke-linecap="round"><path d="M352 454l26 96 83 21m130-143 86 35 60-61"/></g>
+<g stroke="#864bc2" stroke-width="35" stroke-linecap="round"><path d="M462 572l15 3m260-173 9-12"/></g>
+<path d="M310 352l-12 14m99-18-2 13m81 14-8 12" stroke="#fffaf0" stroke-width="7" stroke-linecap="round"/>
+</svg>

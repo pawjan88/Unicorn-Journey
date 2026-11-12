@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { Celebration } from '../dist/celebration.js';
+const ctx=new Proxy({}, {get:(o,k)=>o[k]??(()=>{}),set:(o,k,v)=>(o[k]=v,true)});
+globalThis.window={devicePixelRatio:2};globalThis.ResizeObserver=class{observe(){}};
+const canvas={getContext:()=>ctx,getBoundingClientRect:()=>({width:1200,height:675})};
+const confetti=new Celebration(canvas);assert.equal(canvas.width,2400);assert.equal(canvas.height,1350);assert.equal(confetti.age,-1);
+confetti.start();assert.equal(confetti.particles.length,340);assert(confetti.particles.some(p=>p.glitter));assert(confetti.particles.some(p=>!p.glitter));
+assert(confetti.particles.some(p=>p.x<200&&p.vx>0));assert(confetti.particles.some(p=>p.x>1000&&p.vx<0),'two inward-facing confetti cannons');
+confetti.update(.1);assert(confetti.particles.every(p=>[p.x,p.y,p.vx,p.vy].every(Number.isFinite)));
+for(let i=0;i<500;i++)confetti.update(1/60);assert.equal(confetti.particles.length,0);assert.equal(confetti.age,-1,'animation clears itself');
+confetti.start();confetti.reset();assert.equal(confetti.particles.length,0);assert.equal(confetti.age,-1,'replay clears confetti immediately');
+console.log('PASS: dual-cannon confetti, gold glitter, high-resolution overlay, finite motion, fade and restart cleanup');

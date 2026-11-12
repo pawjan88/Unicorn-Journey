@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { AdventureAudio } from '../dist/audio.js';
+let nodes=[];
+class Node {
+  constructor(){this.gain={value:0,setTargetAtTime(value){this.value=value;}};this.playbackRate={value:1};this.stopped=false;nodes.push(this);}
+  connect(node){return node;}disconnect(){}start(when=0,offset=0){this.started=true;this.offset=offset;}stop(){this.stopped=true;this.onended?.();}
+}
+class Context {
+  constructor(){this.state='suspended';this.currentTime=0;this.destination={};}
+  createGain(){return new Node();}createBufferSource(){return new Node();}
+  resume(){this.state='running';return Promise.resolve();}
+  decodeAudioData(){return Promise.resolve({duration:53.333});}
+}
+globalThis.window={AudioContext:Context};
+const requests=[];
+globalThis.fetch=async url=>{requests.push(String(url));return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};};
+const audio=new AdventureAudio();
+assert.equal(audio.enabled,true);assert.equal(audio.context,null,'no autoplay context before gesture');
+audio.setPlaying(true);assert.equal(audio.music,null);
+audio.unlock();await audio.ready;assert(audio.music?.started);assert(audio.music.loop);assert.equal(audio.buffers.size,12);
+assert(requests.some(url=>url.endsWith('/audio/step_konia_3s.mp3')));assert(requests.some(url=>url.endsWith('/audio/rzenie_konia_3s.mp3')),'supplied files are loaded');
+const originalMusic=audio.music;audio.startMusic();assert.equal(audio.music,originalMusic,'one music loop');
+let count=audio.effects.size;audio.update(.1,true,true);assert(audio.hooves?.started,'recorded hooves when moving on ground');assert(audio.hooves.loop);assert.equal(audio.hooves.buffer,audio.buffers.get('hoof-loop'));assert.equal(audio.hooves.playbackRate.value,1,'recording keeps original speed');
+const firstHooves=audio.hooves;for(let i=0;i<30;i++)audio.update(.1,true,true);assert.equal(audio.hooves,firstHooves,'one three-second loop, no overlapping copies');
+const played=nodes.filter(n=>n.started).length;audio.update(.1,false,true);assert.equal(audio.hooves,null);assert(firstHooves.stopped,'recorded footsteps stop immediately');audio.update(.1,true,false);assert.equal(nodes.filter(n=>n.started).length,played,'no clops while blocked or airborne');
+audio.update(.1,true,true);assert(audio.hooves?.started&&audio.hooves!==firstHooves,'footsteps resume with movement');
+audio.effect('neigh');const firstNeigh=audio.neigh;assert.equal(firstNeigh.buffer,audio.buffers.get('neigh'));audio.effect('neigh');assert(firstNeigh.stopped);assert(audio.neigh!==firstNeigh,'new jump replaces old neigh instead of layering');audio.effect('magic-shot');assert.equal(audio.effects.size,2);
+audio.context.currentTime=12;audio.setPlaying(false);assert.equal(audio.music,null);assert.equal(audio.effects.size,0);assert.equal(audio.hooves,null);assert.equal(audio.neigh,null);assert.equal(audio.musicOffset,12);
+audio.setPlaying(true);assert.equal(audio.music.offset,12,'music resumes at paused position');
+audio.update(.1,true,true);const mutedHooves=audio.hooves;audio.setEnabled(false);assert.equal(audio.music,null);assert.equal(audio.hooves,null);assert(mutedHooves.stopped);count=nodes.filter(n=>n.started).length;audio.effect('neigh');audio.update(1,true,true);assert.equal(nodes.filter(n=>n.started).length,count,'mute blocks music and effects');
+audio.setEnabled(true);assert(audio.music);audio.setPlaying(false);audio.effect('confetti-pop');assert.equal(audio.effects.size,1,'finish sound can follow stopped music');
+audio.reset();assert.equal(audio.effects.size,0);assert.equal(audio.musicOffset,0);assert.equal(audio.hooves,null);assert.equal(audio.neigh,null);
+audio.setPlaying(true);
+const crossing={type:'witch',elapsed:1.2,cleared:false};
+audio.update(.016,false,true,crossing);const laugh=audio.witchLaugh;assert(laugh?.started&&laugh.loop);assert.equal(laugh.buffer,audio.buffers.get('witch-cackle'));assert.equal(laugh.offset,1.2,'laughter follows flight clock');
+for(let i=0;i<10;i++)audio.update(.016,false,true,crossing);assert.equal(audio.witchLaugh,laugh,'one cackle loop');
+audio.setPlaying(false);assert(laugh.stopped);assert.equal(audio.witchLaugh,null,'pause stops the witches');
+crossing.elapsed=2;audio.setPlaying(true);audio.update(.016,false,true,crossing);assert.equal(audio.witchLaugh.offset,2,'resume follows paused flight position');
+audio.setEnabled(false);assert.equal(audio.witchLaugh,null);audio.update(.016,false,true,crossing);assert.equal(audio.witchLaugh,null,'mute blocks cackle');
+audio.setEnabled(true);audio.update(.016,false,true,crossing);const ended=audio.witchLaugh;crossing.cleared=true;audio.update(.016,false,true,crossing);assert(ended.stopped);assert.equal(audio.witchLaugh,null,'laughter ends with flight');
+audio.update(.016,false,true,{type:'unicorn',elapsed:1});assert.equal(audio.witchLaugh,null,'unicorn herds do not cackle');
+audio.update(.016,false,true,{type:'witch',elapsed:0,cleared:false});audio.reset();assert.equal(audio.witchLaugh,null,'restart clears cackle');
+assert(requests.some(url=>url.endsWith('/audio/witch-cackle.mp3')));
+audio.setMusicState('dino',false);audio.setPlaying(true);assert.equal(audio.music.buffer,audio.buffers.get('dino-ambient'),'episode 2 plays uploaded jungle/insect mix');
+const ambient=audio.music;audio.context.currentTime+=4;audio.setMusicState('dino',true);assert(ambient.stopped);assert.equal(audio.music.buffer,audio.buffers.get('dino-thunder'),'fight plays supplied thunder');
+const thunder=audio.music;audio.setPlaying(false);assert(thunder.stopped);audio.setPlaying(true);assert.equal(audio.music.buffer,audio.buffers.get('dino-thunder'));audio.setMusicState('dino',false);assert.equal(audio.music.buffer,audio.buffers.get('dino-ambient'));assert.equal(audio.music.offset,4,'ambient resumes after boss');
+audio.update(.016,false,true,{type:'dinosaur',elapsed:1,cleared:false});assert.equal(audio.dinoCrossing.buffer,audio.buffers.get('dino-call'));audio.update(.016,false,true,null);assert.equal(audio.dinoCrossing,null);
+audio.update(.016,false,true,{type:'pterodactyl',elapsed:.5,cleared:false});assert.equal(audio.dinoCrossing.buffer,audio.buffers.get('ptero-call'));assert.equal(audio.witchLaugh,null);audio.setPlaying(false);assert.equal(audio.dinoCrossing,null);audio.setMusicState('forest',false);audio.setPlaying(true);assert.equal(audio.music.buffer,audio.buffers.get('forest-music'),'episode 1 soundtrack unchanged');audio.reset();
+const failedFetch=globalThis.fetch;globalThis.fetch=async()=>{throw new Error('offline');};const silent=new AdventureAudio();silent.unlock();await silent.ready;assert.equal(silent.buffers.size,0,'missing audio cannot prevent game from loading');globalThis.fetch=failedFetch;
+console.log('PASS: gesture-based start, one calm music loop, hoof movement/airborne guards, supplied recordings, single hoof loop, non-overlapping neigh/spell playback, pause/resume, all-sound mute, finish effect, restart, missing-audio fallback');
