@@ -28,6 +28,7 @@ export class AdventureAudio {
     this.neigh = null;
     this.witchLaugh = null;
     this.dinoCrossing = null;
+    this.musicVolume=.25;this.effectsVolume=.85;this.duckUntil=0;
     // Fetching files does not start audio or create an AudioContext.
     this.files = Promise.all(Object.entries(FILES).map(async ([name, file]) => {
       try {
@@ -45,9 +46,15 @@ export class AdventureAudio {
         this.context = new AudioContext();
         this.master = this.context.createGain();
         this.master.gain.value = this.enabled ? .68 : 0;
-        this.master.connect(this.context.destination);
+        if(this.context.createDynamicsCompressor){
+          const limiter=this.context.createDynamicsCompressor();
+          limiter.threshold.value=-12;limiter.knee.value=18;limiter.ratio.value=4;
+          limiter.attack.value=.006;limiter.release.value=.18;
+          this.master.connect(limiter).connect(this.context.destination);
+        }else this.master.connect(this.context.destination);
+        this.effectsGain=this.context.createGain();this.effectsGain.gain.value=this.effectsVolume;this.effectsGain.connect(this.master);
         this.musicGain = this.context.createGain();
-        this.musicGain.gain.value = .30;
+        this.musicGain.gain.value = this.musicVolume;
         this.musicGain.connect(this.master);
         this.ready = this.files.then(files => Promise.all(files.map(async ([name, bytes]) => {
           if (!bytes) return;
@@ -65,6 +72,11 @@ export class AdventureAudio {
     if (!enabled) { this.stopMusic(); this.stopEffects(); }
     else this.startMusic();
   }
+  setVolume(kind,value){
+    const volume=Math.max(0,Math.min(1,Number.isFinite(value)?value:0));
+    if(kind==='music'){this.musicVolume=volume;this.musicGain?.gain.setTargetAtTime(volume,this.context.currentTime,.08);}
+    else if(kind==='effects'){this.effectsVolume=volume;this.effectsGain?.gain.setTargetAtTime(volume,this.context.currentTime,.025);}
+  }
   setPlaying(playing) {
     this.playing = playing;
     if (playing) this.startMusic();
@@ -75,7 +87,7 @@ export class AdventureAudio {
     if(next===this.musicTrack)return;
     this.stopMusic();this.trackOffsets.set(this.musicTrack,this.musicOffset);
     this.musicTrack=next;this.musicOffset=this.trackOffsets.get(next)||0;
-    if(this.musicGain)this.musicGain.gain.setTargetAtTime(next==='dino-thunder'?.36:.30,this.context.currentTime,.15);
+    if(this.musicGain)this.musicGain.gain.setTargetAtTime(this.musicVolume*(next==='dino-thunder'?.85:1),this.context.currentTime,.15);
     this.startMusic();
   }
   startMusic() {
@@ -105,11 +117,13 @@ export class AdventureAudio {
     if (!this.enabled || !this.context || this.context.state !== 'running') return;
     const buffer = this.buffers.get(name);
     if (!buffer) return;
+    if(this.effects.size>=12){const oldest=this.effects.values().next().value;this.effects.delete(oldest);try{oldest.stop();}catch{}oldest.disconnect();}
+    if(name==='neigh'||name==='magic-shot')this.duckUntil=this.context.currentTime+.65;
     if (name === 'neigh' && this.neigh) { try { this.neigh.stop(); } catch {} }
     const source = this.context.createBufferSource(), gain = this.context.createGain();
     if (name === 'neigh') this.neigh = source;
     source.buffer = buffer; source.playbackRate.value = rate; gain.gain.value = volume;
-    source.connect(gain).connect(this.master); this.effects.add(source);
+    source.connect(gain).connect(this.effectsGain); this.effects.add(source);
     source.onended = () => { this.effects.delete(source); if (this.neigh === source) this.neigh = null; source.disconnect(); gain.disconnect(); };
     source.start();
   }
@@ -120,8 +134,8 @@ export class AdventureAudio {
     const source = this.context.createBufferSource(), gain = this.context.createGain();
     source.buffer = buffer;
     source.loop = true;
-    gain.gain.value = .42;
-    source.connect(gain).connect(this.master);
+    gain.gain.value = .34;
+    source.connect(gain).connect(this.effectsGain);
     source.onended = () => { if (this.hooves === source) this.hooves = null; source.disconnect(); gain.disconnect(); };
     this.hooves = source;
     source.start();
@@ -142,7 +156,7 @@ export class AdventureAudio {
     if(!buffer)return;
     const source=this.context.createBufferSource(),gain=this.context.createGain();
     source.buffer=buffer;source.loop=true;gain.gain.value=.40;
-    source.connect(gain).connect(this.master);
+    source.connect(gain).connect(this.effectsGain);
     source.onended=()=>{if(this.witchLaugh===source)this.witchLaugh=null;source.disconnect();gain.disconnect();};
     this.witchLaugh=source;
     source.start(0,crossing.elapsed%buffer.duration);
@@ -159,16 +173,17 @@ export class AdventureAudio {
     if(this.dinoCrossing)return;
     const buffer=this.buffers.get(name);if(!buffer)return;
     const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=.25;
-    source.connect(gain).connect(this.master);source.onended=()=>{if(this.dinoCrossing===source)this.dinoCrossing=null;source.disconnect();gain.disconnect();};
+    source.connect(gain).connect(this.effectsGain);source.onended=()=>{if(this.dinoCrossing===source)this.dinoCrossing=null;source.disconnect();gain.disconnect();};
     this.dinoCrossing=source;source.start(0,crossing.elapsed%buffer.duration);
   }
   stopDinoCrossing(){if(!this.dinoCrossing)return;const source=this.dinoCrossing;this.dinoCrossing=null;try{source.stop();}catch{}source.disconnect();}
   update(dt, moving, grounded, witchCrossing=null) {
+    if(this.musicGain)this.musicGain.gain.setTargetAtTime(this.musicVolume*(this.musicTrack==='dino-thunder'?.85:1)*(this.context.currentTime<this.duckUntil?.65:1),this.context.currentTime,.12);
     this.updateWitches(witchCrossing);this.updateDinoCrossing(witchCrossing);
     if (!this.playing || !this.enabled || !moving || !grounded) { this.stopHooves(); return; }
     this.startHooves();
   }
   reset() {
-    this.setPlaying(false); this.musicOffset = 0; this.trackOffsets.clear();
+    this.setPlaying(false); this.musicOffset = 0; this.trackOffsets.clear();this.duckUntil=0;
   }
 }

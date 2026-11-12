@@ -4,6 +4,27 @@
 
 Dwa epizody: magiczny las i świat dinozaurów. Gra na komputer z klawiaturą; wymaga przeglądarki z WebGL.
 
+
+## Odświeżenie pixel art 3D
+
+Wersja robocza na gałęzi `refresh/pixel-art`. Zmiany pozostają lokalne do zgody właściciela na publikację.
+
+Wspólna paleta 42 kolorów, tekstury próbkowane bez wygładzania i skalowany w całkowitych pikselach bufor Three.js tworzą spójny styl obu epizodów. Istniejące pozy postaci zachowują wspólną skalę oraz położenie roga; wybrany kolor maści i roga pozostaje spójny. Menu ma lokalną czcionkę Pixelify Sans (licencja OFL w `dist/fonts/`), obrazkowe wybory, obsługę klawiatury i zwijaną pomoc. Podczas jazdy środek ekranu jest wolny od paneli.
+
+Animacja galopu zależy od przebytej drogi, postacie oddychają, a pterodaktyle poruszają skrzydłami. Pauza zatrzymuje zegar oprawy i efekty. Renderowanie cieni odświeża się przy przesuwaniu trasy, a pojedyncza geometria tęczy zastępuje wiele oddzielnych obiektów. Utrata kontekstu WebGL wstrzymuje grę; po odzyskaniu grafiki można wznowić przygodę.
+
+Dźwięki konia oraz przesłane nagrania dżungli i grzmotów zachowano. Mikser ma ogranicznik głośności, osobne suwaki muzyki i efektów w pauzie, cichsze kopyta i łagodne przyciszanie podkładu przy skoku lub strzale.
+
+### Testy w przeglądarce
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
+
+Można wskazać zainstalowany Chromium przez `CHROMIUM_PATH`. Test uruchamia lokalny serwer, używa prawdziwych naciśnięć klawiszy i zapisuje zrzuty oraz `report.json` w `artifacts/playtest/`. Scenariusze korzystają z lokalnych punktów kontrolnych, aby dotrzeć do przeszkód, przelotu, bossów i mety; nie zastępują pełnych testów reguł w `npm test`. Punktami kontrolnymi można sterować wyłącznie pod `localhost` / `127.0.0.1` z parametrem `?qa=1`; zwykły adres nie udostępnia tych narzędzi. Test sprawdza także rzeczywisty sygnał Web Audio, responsywność, tryb ograniczonego ruchu oraz utratę i przywrócenie kontekstu WebGL.
+
 ## Uruchomienie lokalne
 
 ```sh
@@ -92,7 +113,7 @@ Widok pierwszoosobowy z siodła jednorożca, węższa ścieżka i szybsza jazda.
 
 Ilustracje znajdują się w `dist/assets/` i są ładowane z tej samej witryny przed udostępnieniem przycisku startu.
 
-Brak procesu budowania. GitHub Pages publikuje katalog `dist/` przez workflow `.github/workflows/pages.yml`. Dźwięk jest domyślnie włączony po kliknięciu Start; można go wyciszyć. Czcionki Google Fonts mają lokalne czcionki zastępcze.
+Brak procesu budowania. GitHub Pages publikuje katalog `dist/` przez workflow `.github/workflows/pages.yml`. Dźwięk jest domyślnie włączony po kliknięciu Start; można go wyciszyć. Czcionka Pixelify Sans jest dołączona lokalnie; gra nie wymaga połączenia z Google Fonts.
 
 ## Sprawdzenie
 

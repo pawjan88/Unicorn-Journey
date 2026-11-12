@@ -48,18 +48,12 @@ export class Celebration {
       p.x += (p.vx + Math.sin(this.age * 3 + p.phase) * 14) * dt;
       p.y += p.vy * dt; p.rotation += p.spin * dt;
       if (p.life <= 0) continue;
-      c.save(); c.translate(p.x, p.y); c.rotate(p.rotation);
+      c.save(); c.translate(Math.round(p.x/3)*3,Math.round(p.y/3)*3);c.rotate(Math.round(p.rotation/(Math.PI/2))*(Math.PI/2));
       c.globalAlpha = Math.min(1, p.life) * (p.glitter ? .65 + Math.sin(this.age * 5 + p.phase) * .3 : .95);
       c.fillStyle = p.glitter ? '#fff0a3' : p.color;
       if (p.glitter) {
-        c.shadowBlur = 9; c.shadowColor = '#ffd337';
-        c.beginPath();
-        for (let i = 0; i < 8; i++) {
-          const angle = i * Math.PI / 4, radius = i % 2 ? p.size * .24 : p.size;
-          const x = Math.cos(angle) * radius, y = Math.sin(angle) * radius;
-          if (i === 0) c.moveTo(x,y); else c.lineTo(x,y);
-        }
-        c.closePath(); c.fill();
+        const size=Math.max(3,Math.round(p.size/3)*3);
+        c.fillRect(-size,-1.5,size*2,3);c.fillRect(-1.5,-size,3,size*2);
       } else {
         c.scale(Math.max(.18, Math.abs(Math.cos(this.age * 5 + p.phase))),1);
         c.fillRect(-p.size/2, -p.size/3, p.size, p.size*.65);

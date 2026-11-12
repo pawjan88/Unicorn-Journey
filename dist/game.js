@@ -1,17 +1,20 @@
 import { Adventure, RULES } from './rules.js?v=9';
-import { AdventureAudio } from './audio.js?v=9';
+import { AdventureAudio } from './audio.js?v=11';
 import { EPISODES } from './episodes.js?v=9';
 import { HORSES } from './characters.js?v=7';
 import { Celebration } from './celebration.js?v=4';
+import { prepareMenuArt } from './pixel-art.js?v=11';
 const $ = selector => document.querySelector(selector);
 const keys = new Set();
 const input = { forward: false, steer: 0, fire: false };
-let forest, toastTimer, previousTime = 0, accumulator = 0, pendingEpisode = null;
+let forest, toastTimer, previousTime = 0, accumulator = 0, pendingEpisode = null, sceneTime = 0, contextUnavailable = false;
 const sound = new AdventureAudio();
 const confetti = new Celebration($('#confetti'));
 const game = new Adventure(handleEvent);
 const overlay = $('#overlay');
 const startTemplate = overlay.innerHTML;
+let lastHud='',uiMode=null;
+function syncMode(){if(uiMode!==game.mode){uiMode=game.mode;$('.game').setAttribute('data-mode',uiMode);}}
 
 function message(text) {
   clearTimeout(toastTimer);
@@ -20,8 +23,12 @@ function message(text) {
   toastTimer = setTimeout(() => { $('#message').style.opacity = 0; }, 2300);
 }
 function updateHud() {
-  $('#count').innerHTML = `${game.count} <small>/ ${game.episode.total}</small>`;
+  syncMode();
   $('#progress').style.width = `${game.distance / RULES.length * 100}%`;
+  const signature=[game.mode,game.episodeId,game.count,game.waitingForHerd,game.waitingCrossing?.type,game.bonus.active,game.bonusCount,game.boss.active,game.boss.done,game.boss.hp].join(':');
+  if(signature===lastHud)return;
+  lastHud=signature;
+  $('#count').innerHTML = `${game.count} <small>/ ${game.episode.total}</small>`;
   $('#herd-notice').hidden = !game.waitingForHerd;
   const crossingMessages={witch:'<span>🧙‍♀️</span> Czarownice lecą — poczekaj',unicorn:'<span>🦄</span> Poczekaj, stado przebiega',dinosaur:'<span>🦕</span> Poczekaj, stado dinozaurów',pterodactyl:'<span>🦅</span> Poczekaj na przelot pterodaktyli'};
   $('#herd-notice').innerHTML = crossingMessages[game.waitingCrossing?.type]||crossingMessages.unicorn;
@@ -33,7 +40,7 @@ function updateHud() {
   $('#boss-hp').textContent = '●'.repeat(game.boss.hp) + '○'.repeat(3-game.boss.hp);
 }
 function start(options = {}) {
-  if (!forest) return;
+  if (!forest||contextUnavailable) return;
   sound.unlock(); sound.reset(); sound.setMusicState(game.episodeId,false); sound.setPlaying(true); confetti.reset();
   if (!options.preserveInput) keys.clear();
   pendingEpisode = null; game.start(); updateHud();
@@ -46,6 +53,7 @@ function start(options = {}) {
   $('#world').focus({ preventScroll: true });
 }
 function resume() {
+  if(contextUnavailable){message('Grafika odpoczywa. Poczekaj chwilkę lub odśwież stronę.');return;}
   sound.unlock(); sound.setPlaying(true);
   keys.clear(); game.resume(); overlay.hidden = true;
   $('#pause').textContent = 'Ⅱ';
@@ -58,8 +66,12 @@ function pause() {
   keys.clear(); game.pause(); sound.setPlaying(false); overlay.hidden = false;
   $('#pause').textContent = '▶';
   $('#pause').setAttribute('aria-label', 'Wznów grę');
-  overlay.innerHTML = '<div class="intro"><div class="pill">CHWILA ODPOCZYNKU</div><h2>Las poczeka.</h2><p>Wracamy do naszej przygody?</p><button class="primary" id="resume">Jedziemy dalej <span>→</span></button></div>';
+  syncMode();
+  overlay.innerHTML = `<div class="intro"><div class="pill">CHWILA ODPOCZYNKU</div><h2>Magia na Ciebie<br><em>poczeka.</em></h2><p>Odpocznij chwilkę. Wracamy, kiedy zechcesz.</p><button class="primary" id="resume">Jedziemy dalej <span>→</span></button><div class="sound-settings"><label>Muzyka <input id="music-volume" type="range" min="0" max="100" value="${Math.round((sound.musicVolume??.25)*100)}"></label><label>Efekty <input id="effects-volume" type="range" min="0" max="100" value="${Math.round((sound.effectsVolume??.85)*100)}"></label></div><button class="secondary" id="back-menu">Wróć do wyboru przygody</button></div>`;
   $('#resume').onclick = resume;
+  $('#back-menu').onclick = showStart;
+  $('#music-volume').oninput=event=>sound.setVolume('music',Number(event.target.value)/100);
+  $('#effects-volume').oninput=event=>sound.setVolume('effects',Number(event.target.value)/100);
   $('#resume').focus({ preventScroll: true });
 }
 function handleEvent(event) {
@@ -114,9 +126,11 @@ function refreshHorseChoices() {
   });
   const horse=HORSES.find(h=>h.id===game.horseId);
   $('#horse-badge').innerHTML = `<img src="assets/${horse.portrait}" alt=""><span>${horse.name}</span>`;
+  prepareMenuArt($('#horse-badge'));
 }
 function applyEpisodeUI() {
   const episode=game.episode;
+  $('.game').setAttribute('data-episode',game.episodeId);
   $('.edition').textContent=episode.edition;
   $('h1').innerHTML=episode.title;$('.heading p').textContent=episode.subtitle;
   $('.scene-label').textContent=episode.scene;
@@ -131,12 +145,13 @@ function rebuildForest() {
   forest=new forest.constructor($('#world'),game.objects,game.herds,{witches:game.witches,horseId:game.horseId,episodeId:game.episodeId});
 }
 function bindStart() {
-  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img src="assets/episode-${episode.id}.svg" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
+  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img class="episode-image" src="assets/episode-${episode.id}.svg" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
   Object.values(EPISODES).forEach(episode=>{$('#episode-'+episode.id).onclick=()=>game.selectEpisode(episode.id);});
   $('#intro-copy').textContent=game.episode.intro;
   $('#horse-picker').innerHTML = HORSES.map(horse=>`<button type="button" class="horse-option" id="horse-${horse.id}" aria-label="Wybierz: ${horse.name}" aria-pressed="${game.horseId===horse.id}"><img src="assets/${horse.portrait}" alt=""><strong>${horse.name}</strong><span class="horse-colors" aria-hidden="true"><i style="background:${horse.coat}"></i><i style="background:${horse.hooves}"></i><i style="background:${horse.horn}"></i></span></button>`).join('');
   HORSES.forEach(horse=>{$('#horse-'+horse.id).onclick=()=>game.selectHorse(horse.id);});
-  $('#play').onclick=start;$('#play').disabled=!forest;if(forest)$('#play').innerHTML='Zaczynamy! <span>→</span>';refreshHorseChoices();
+  $('#play').onclick=start;$('#play').disabled=!forest;if(forest)$('#play').innerHTML='Ruszamy po przygodę! <span>→</span>';refreshHorseChoices();
+  prepareMenuArt(overlay);
 }
 function showStart() {
   pendingEpisode=null;keys.clear();sound.reset();confetti.reset();game.reset();forest.resetEffects();
@@ -174,12 +189,15 @@ addEventListener('keyup', event => keys.delete(event.code));
 addEventListener('blur', () => { keys.clear(); if (game.mode === 'playing') pause(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && game.mode === 'playing') pause(); });
 $('#world').addEventListener('webglcontextlost', event => {
-  event.preventDefault(); if (game.mode === 'playing') pause();
-  message('Chwila przerwy w magii. Odśwież stronę, aby wrócić do lasu.');
+  event.preventDefault();contextUnavailable=true;if(game.mode==='playing')pause();
+  $('.game').setAttribute('data-context','lost');
+  message('Chwila przerwy w grafice. Twoja przygoda jest bezpieczna.');
 });
+$('#world').addEventListener('webglcontextrestored',()=>{contextUnavailable=false;$('.game').setAttribute('data-context','ready');forest?.resize();message('Magia wróciła! Możesz jechać dalej.');});
+$('.help')?.addEventListener('toggle',event=>{if(event.currentTarget.open&&game.mode==='playing')pause();});
 
 function frame(timestamp) {
-  const dt = Math.min(.06, Math.max(0, (timestamp - (previousTime || timestamp)) / 1000));
+  const dt = Math.min(.25, Math.max(0, (timestamp - (previousTime || timestamp)) / 1000));
   previousTime = timestamp;
   input.forward = keys.has('ArrowUp');
   input.steer = Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft'));
@@ -194,21 +212,36 @@ function frame(timestamp) {
       sound.effect('confetti-pop',.6);confetti.start();
     }
   }
-  if (game.mode === 'playing') updateHud();
+  updateHud();
   sound.setMusicState(game.episodeId,game.boss.active&&!game.boss.done);
   sound.update(dt, game.moving, game.jumpTime < 0 && !game.bonus.active, [...game.herds,...game.witches].find(w=>w.elapsed>=0&&!w.cleared)||null);
-  forest.update(game, timestamp/1000, dt);
-  confetti.update(dt);
+  const visualDt=game.mode==='paused'?0:dt;
+  sceneTime+=visualDt;
+  if(!contextUnavailable)forest.update(game, sceneTime, visualDt);
+  confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=9').then(async ({ MagicForest }) => {
+import('./forest.js?v=11').then(async ({ MagicForest }) => {
+  await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });
   $('#play').disabled = false;
-  $('#play').innerHTML = 'Zaczynamy! <span>→</span>';
+  $('#play').innerHTML = 'Ruszamy po przygodę! <span>→</span>';
   requestAnimationFrame(frame);
 }).catch(error => {
   console.error('Nie udało się otworzyć magicznego lasu:', error);
   overlay.innerHTML = '<div class="intro"><div class="pill">MAGICZNY LAS 3D</div><h2>Obudźmy las!</h2><p>Gra potrzebuje włączonej akceleracji graficznej (WebGL). Otwórz ją w aktualnym Chrome, Edge lub Firefox.</p><button class="primary" id="reload">Spróbuj ponownie ↻</button></div>';
   $('#reload').onclick = () => location.reload();
 });
+
+// Local-only checkpoints for browser QA. Never exposed on the published hostname.
+if(typeof location!=='undefined'&&['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).has('qa')){
+  let contextExtension,meter;
+  Object.defineProperty(window,'__unicornQA',{value:Object.freeze({
+    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls}}),
+    checkpoint:(distance,x=0)=>{game.distance=distance;game.x=x;game.stun=0;game.jumpTime=-1;game.jumpHeight=0;game.objects.forEach(o=>{if(o.type!=='boss')o.done=o.z<distance-2;});[...game.herds,...game.witches].forEach(h=>{h.elapsed=-1;h.cleared=h.z<distance-12;});game.bonus.active=false;game.bonus.finished=distance>RULES.bonusEnd;game.bonus.elapsed=0;game.flightHeight=0;game.rocks=[];accumulator=0;forest?.resetEffects();},
+    loseContext:()=>{contextExtension=forest.renderer.getContext().getExtension('WEBGL_lose_context');contextExtension?.loseContext();},
+    restoreContext:()=>contextExtension?.restoreContext(),
+    audioLevel:()=>{if(!sound.master)return 0;if(!meter){meter=sound.context.createAnalyser();meter.fftSize=256;sound.master.connect(meter);}const data=new Float32Array(meter.fftSize);meter.getFloatTimeDomainData(data);return Math.sqrt(data.reduce((sum,value)=>sum+value*value,0)/data.length);},
+  })});
+}

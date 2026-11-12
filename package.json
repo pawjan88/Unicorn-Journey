@@ -4,6 +4,11 @@
   "type": "module",
   "description": "Unicorn Journey — przygoda jednorożca w magicznym lesie i świecie dinozaurów",
   "scripts": {
-    "test": "node --experimental-vm-modules --test tests/*.test.mjs"
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs",
+    "test:browser": "node scripts/playtest.cjs",
+    "preview": "python3 -m http.server 8080 --bind 0.0.0.0 --directory dist"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }

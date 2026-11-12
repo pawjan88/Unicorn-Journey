@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {Adventure,RULES} from '../dist/rules.js';
 import {HORSES} from '../dist/characters.js';
 import {EPISODES} from '../dist/episodes.js';
+import {prepareMenuArt} from '../dist/pixel-art.js';
 const elements=new Map(),listeners={};
 function element(){return {style:{},hidden:false,disabled:false,_html:'',textContent:'',attributes:{},
  get innerHTML(){return this._html;},
@@ -25,7 +26,7 @@ class Audio {
 class Confetti {constructor(){this.starts=0;}start(){this.starts++;}reset(){}update(){}}
 const context=vm.createContext({console,Math,Set,document:{querySelector:$,addEventListener:(type,fn)=>{listeners[type]=fn;}},window:{},addEventListener:(type,fn)=>{listeners[type]=fn;},requestAnimationFrame(){},setTimeout:()=>1,clearTimeout(){}});
 function synthetic(values){return new vm.SyntheticModule(Object.keys(values),function(){for(const[k,v]of Object.entries(values))this.setExport(k,v);},{context});}
-const modules={rules:synthetic({Adventure,RULES}),episodes:synthetic({EPISODES}),characters:synthetic({HORSES}),audio:synthetic({AdventureAudio:Audio}),celebration:synthetic({Celebration:Confetti}),forest:synthetic({MagicForest:Forest})};
+const modules={rules:synthetic({Adventure,RULES}),episodes:synthetic({EPISODES}),characters:synthetic({HORSES}),audio:synthetic({AdventureAudio:Audio}),celebration:synthetic({Celebration:Confetti}),forest:synthetic({MagicForest:Forest}),'pixel-art':synthetic({prepareMenuArt})};
 await modules.forest.link(()=>{});await modules.forest.evaluate();
 const source=fs.readFileSync(new URL('../dist/game.js',import.meta.url),'utf8')+'\nexport {game,keys,start,frame,forest,showStart,sound,confetti,pause,accumulator};';
 const app=new vm.SourceTextModule(source,{context,importModuleDynamically:async()=>modules.forest});
@@ -47,4 +48,5 @@ ui.pause();const stopped=ui.game.distance;ui.frame(90);assert.equal(ui.game.dist
 ui.game.objects.forEach(o=>o.done=true);[...ui.game.herds,...ui.game.witches].forEach(h=>h.cleared=true);ui.game.bonus.finished=true;ui.game.distance=RULES.length-.03;ui.frame(110);ui.frame(130);
 assert.equal(ui.game.mode,'finished');assert.equal(ui.game.episodeId,'dino');assert.equal(ui.forest,dinoScene);assert.equal($('#overlay').hidden,false,'last episode still shows congratulations');assert.equal(ui.sound.playing,false);
 ui.showStart();assert.equal($('#episode-dino').attributes['aria-pressed'],'true');$('#episode-forest').onclick();assert.equal(ui.game.episodeId,'forest');assert.equal(ui.game.mode,'intro');assert.equal(ui.game.horseId,'moon');
-console.log('PASS: episode picture cards and selected states, immediate forest-to-dinosaur transition, chosen horse and held keys preserved, one transition, safe simulation step, confetti/audio handoff, final congratulations and menu return');
+ui.start();key('ArrowUp');ui.frame(330);assert(ui.game.distance>.7&&ui.game.distance<.85,'a 200ms render frame advances elapsed simulation time instead of slowing the game to 60ms');
+console.log('PASS: episode picture cards and selected states, immediate forest-to-dinosaur transition, chosen horse and held keys preserved, one transition, safe simulation step, confetti/audio handoff, final congratulations, menu return and low-FPS timing');
