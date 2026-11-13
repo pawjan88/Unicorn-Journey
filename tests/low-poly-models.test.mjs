@@ -11,6 +11,12 @@ function inspect(model){
 }
 for(const horse of HORSES){
   const pony=assets.unicorn(horse),rider=assets.rider(horse);inspect(pony);inspect(rider);
+  const smallHead=new THREE.Box3().setFromObject(rider.userData.head).getSize(new THREE.Vector3());
+  rider.userData.head.scale.setScalar(1);
+  const originalHead=new THREE.Box3().setFromObject(rider.userData.head).getSize(new THREE.Vector3());
+  rider.userData.head.scale.setScalar(.8);
+  for(const axis of ['x','y','z'])assert(Math.abs(smallHead[axis]/originalHead[axis]-.8)<1e-9,'rider head is exactly 20% smaller in every dimension');
+  assert.equal(pony.userData.head.scale.x,1,'menu and herd ponies retain their proportions');
   for(const model of [pony,rider]){
     const colors=new Set();model.traverse(part=>{if(part.isMesh)colors.add('#'+part.material.color.getHexString());});
     for(const color of [horse.coat,horse.hooves,horse.horn])assert(colors.has(color),'menu model and first-person model share the selected palette');

@@ -42,6 +42,19 @@ async function run(){
     await page.click('#episode-forest');assert.equal((await state()).horse,'rose');await page.click('#play');
     await wait(()=>window.__unicornQA.snapshot().audio.buffers===12);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
   });
+  async function noCaptions(){
+    const words=await page.locator('.game').evaluate(root=>{
+      const texts=[],walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
+      while((node=walker.nextNode())){
+        if(!node.textContent.trim()||node.parentElement.closest('.sr-only,[hidden]'))continue;
+        const style=getComputedStyle(node.parentElement);if(style.visibility==='hidden'||style.display==='none')continue;
+        const range=document.createRange();range.selectNodeContents(node);const rect=range.getBoundingClientRect();
+        if(rect.width>1&&rect.height>1&&/\p{L}/u.test(node.textContent))texts.push(node.textContent.trim());
+      }
+      return texts;
+    });assert.deepEqual(words,[],'no visible captions or instructions cover the playfield');
+  }
+  await check('Rider head reduced by 20% and gameplay free of captions',async()=>{assert.equal((await state()).view.headScale,.8);assert.equal(await page.locator('#herd-notice, #bonus-notice, .spell-hint, .scene-label').count(),0);await noCaptions();});
   await check('Hold Up to ride, release to stop, steer both ways and respect path bounds',async()=>{
     const scroll=await page.evaluate(()=>scrollY);
     await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>.8);assert((await state()).audio.hooves);
@@ -78,12 +91,13 @@ async function run(){
     await shot('08-herd-crossing');await page.keyboard.press('Control');assert((await state()).waiting);await wait(()=>window.__unicornQA.snapshot().distance>92);await page.keyboard.up('ArrowUp');
   });
   await check('Witch crossing and pause prevent movement and lingering hoof audio',async()=>{
-    await checkpoint(54.5);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);await page.keyboard.up('ArrowUp');await shot('09-witches');
+    await checkpoint(54.5);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);await page.keyboard.up('ArrowUp');await noCaptions();await shot('09-witches');
     await page.evaluate(()=>window.dispatchEvent(new Event('blur')));assert.equal((await state()).mode,'paused');await page.click('#resume');assert(!(await state()).audio.hooves);
   });
   await check('Rainbow sky road rises above forest, awards five bonus pickups and lands safely',async()=>{
+    await page.evaluate(()=>{window.__flightTrace=[];window.__captureFlight=true;const sample=()=>{if(!window.__captureFlight)return;const state=window.__unicornQA.snapshot();if(state.bonus)window.__flightTrace.push({distance:state.distance,...state.view});requestAnimationFrame(sample);};requestAnimationFrame(sample);});
     await checkpoint(193.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().bonus);await page.keyboard.up('ArrowUp');
-    await wait(()=>window.__unicornQA.snapshot().bonusCount>=2);await shot('10-rainbow-flight');await wait(()=>!window.__unicornQA.snapshot().bonus);assert.equal((await state()).bonusCount,5);
+    await wait(()=>window.__unicornQA.snapshot().bonusCount>=2);await noCaptions();await shot('10-rainbow-flight');await wait(()=>window.__unicornQA.snapshot().distance>=216);await shot('10b-rainbow-descent');await wait(()=>window.__unicornQA.snapshot().distance>=223);await shot('10c-rainbow-landing');await wait(()=>!window.__unicornQA.snapshot().bonus);assert.equal((await state()).bonusCount,5);const trace=await page.evaluate(()=>{window.__captureFlight=false;return window.__flightTrace;});assert(trace.length>10);assert(trace.every(sample=>sample.clearance>1.4),'camera never clips below the rainbow');assert(trace.some(sample=>sample.distance>212&&sample.pitch<-.8),'camera looks down while descending');report.flightTrace=trace;
   });
   await check('Forest boss needs three hits, then Episode 1 automatically continues into Episode 2',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);await shot('11-forest-boss');
@@ -95,7 +109,7 @@ async function run(){
     await checkpoint(54.5);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);await page.keyboard.up('ArrowUp');await shot('14-pterodactyls');
   });
   await check('Tyrannosaur, thunder music, three-hit boss, cave finish, confetti and replay',async()=>{
-    await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).audio.music,'dino-thunder');await shot('15-tyrannosaur');
+    await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).audio.music,'dino-thunder');await noCaptions();await shot('15-tyrannosaur');
     await page.keyboard.down('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);await page.keyboard.up('Control');
     await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('16-finish-confetti');assert(await page.locator('#again').isVisible());await page.click('#again');assert.equal((await state()).mode,'playing');assert.equal((await state()).distance,0);
   });

@@ -100,7 +100,7 @@ export class LowPolyAssets{
     const rider=new THREE.Group();rider.name='rider-unicorn-'+horse.id;
     this.mesh(rider,'round',horse.coat,0,-.27,-.11,.34,.63,.34);
     for(let i=0;i<6;i++)this.mesh(rider,'rock',RAINBOW[i],0,.18-i*.16,-.34,.15,.18,.14);
-    const head=this.unicornHead(horse);head.position.y=.18;rider.add(head);
+    const head=this.unicornHead(horse);head.position.y=.18;head.scale.setScalar(.8);rider.add(head);
     const hooves=[-1,1].map(side=>{const hoof=this.mesh(rider,'box',horse.hooves,side*.40,-.48,.38,.19,.18,.27);hoof.visible=false;return hoof;});
     rider.traverse(object=>{if(object.isMesh){object.castShadow=false;object.receiveShadow=false;}});
     rider.userData={kind:'rider',head,hooves,hornTip:head.userData.hornTip,horseId:horse.id};return rider;

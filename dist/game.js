@@ -6,7 +6,7 @@ import { Celebration } from './celebration.js?v=12';
 const $ = selector => document.querySelector(selector);
 const keys = new Set();
 const input = { forward: false, steer: 0, fire: false };
-let forest, toastTimer, previousTime = 0, accumulator = 0, pendingEpisode = null, sceneTime = 0, contextUnavailable = false;
+let forest, previousTime = 0, accumulator = 0, pendingEpisode = null, sceneTime = 0, contextUnavailable = false;
 const sound = new AdventureAudio();
 const confetti = new Celebration($('#confetti'));
 const game = new Adventure(handleEvent);
@@ -15,12 +15,8 @@ const startTemplate = overlay.innerHTML;
 let lastHud='',uiMode=null;
 function syncMode(){if(uiMode!==game.mode){uiMode=game.mode;$('.game').setAttribute('data-mode',uiMode);}}
 
-function message(text) {
-  clearTimeout(toastTimer);
-  $('#message').textContent = text;
-  $('#message').style.opacity = 1;
-  toastTimer = setTimeout(() => { $('#message').style.opacity = 0; }, 2300);
-}
+function announce(text){$('#message').textContent=text;}
+
 function updateHud() {
   syncMode();
   $('#progress').style.width = `${game.distance / RULES.length * 100}%`;
@@ -28,15 +24,11 @@ function updateHud() {
   if(signature===lastHud)return;
   lastHud=signature;
   $('#count').innerHTML = `${game.count} <small>/ ${game.episode.total}</small>`;
-  $('#herd-notice').hidden = !game.waitingForHerd;
-  const crossingMessages={witch:'<span>🧙‍♀️</span> Czarownice lecą — poczekaj',unicorn:'<span>🦄</span> Poczekaj, stado przebiega',dinosaur:'<span>🦕</span> Poczekaj, stado dinozaurów',pterodactyl:'<span>🦅</span> Poczekaj na przelot pterodaktyli'};
-  $('#herd-notice').innerHTML = crossingMessages[game.waitingCrossing?.type]||crossingMessages.unicorn;
   $('#bonus-count').hidden = game.bonusCount === 0;
-  $('#bonus-count').textContent = `+ ${game.bonusCount} bonus`;
-  $('#bonus-notice').hidden = !game.bonus.active;
-  $('#bonus-notice').textContent = `${game.episode.icon} ${game.episode.bonusName} · ${game.bonusCount} / 5`;
+  $('#bonus-count').textContent = `+${game.bonusCount}`;
   $('#boss-notice').hidden = !game.boss.active || game.boss.done;
   $('#boss-hp').textContent = '●'.repeat(game.boss.hp) + '○'.repeat(3-game.boss.hp);
+  $('#boss-notice').setAttribute('aria-label',`${game.episode.bossName}: pozostało ${game.boss.hp} z 3 trafień`);
 }
 function start(options = {}) {
   if (!forest||contextUnavailable) return;
@@ -47,12 +39,11 @@ function start(options = {}) {
   overlay.hidden = true;
   $('#pause').textContent = 'Ⅱ';
   $('#pause').setAttribute('aria-label', 'Pauza');
-  clearTimeout(toastTimer); $('#message').style.opacity = 0;
   accumulator = 0;
   $('#world').focus({ preventScroll: true });
 }
 function resume() {
-  if(contextUnavailable){message('Grafika odpoczywa. Poczekaj chwilkę lub odśwież stronę.');return;}
+  if(contextUnavailable){announce('Grafika odpoczywa. Poczekaj chwilkę lub odśwież stronę.');return;}
   sound.unlock(); sound.setPlaying(true);
   keys.clear(); game.resume(); overlay.hidden = true;
   $('#pause').textContent = 'Ⅱ';
@@ -92,20 +83,17 @@ function handleEvent(event) {
   } else if (event.type === 'horseSelect') {
     forest?.selectHorse(event.horseId); refreshHorseChoices();
   } else if (event.type === 'bonusStart') {
-    sound.effect('collect', .45); message('Galop po Tęczy! 🌈');
+    sound.effect('collect', .45);
   } else if (event.type === 'bonusCollect') {
     sound.effect('collect', .4); forest?.collect(event.object); updateHud();
-  } else if (event.type === 'bonusEnd') {
-    message(`Tęczowy galop: +${game.bonusCount} ${game.episode.bonusUnit}!`);
   } else if (event.type === 'bossWake') {
-    message(game.episode.bossHint);if(game.episodeId==='dino')sound.effect('dino-call',.4,.8);
+    if(game.episodeId==='dino')sound.effect('dino-call',.4,.8);
   } else if (event.type === 'rockRoll') {
     forest?.bossThrow(); sound.effect('bump', .15, .65);
   } else if (event.type === 'rockHit') {
-    sound.effect('bump', .35); message('Uwaga na kamienie! Skręcaj strzałkami.');
+    sound.effect('bump', .35);
   } else if (event.type === 'bump') {
     sound.effect('bump', .25);
-    message('Omiń mnie albo użyj tęczowej magii — Ctrl!');
   } else if (event.type === 'cleared') {
     sound.effect('collect', .18, 1.15);
   } else if (event.type === 'finish') {
@@ -124,17 +112,14 @@ function refreshHorseChoices() {
     const button=$('#horse-'+horse.id);
     if(button)button.setAttribute('aria-pressed', String(game.horseId===horse.id));
   });
-  const horse=HORSES.find(h=>h.id===game.horseId);
-  $('#horse-badge').innerHTML = `<img src="assets/${horse.portrait}" alt=""><span>${horse.name}</span>`;
+
 }
 function applyEpisodeUI() {
   const episode=game.episode;
   $('.game').setAttribute('data-episode',game.episodeId);
   $('.edition').textContent=episode.edition;
   $('h1').innerHTML=episode.title;$('.heading p').textContent=episode.subtitle;
-  $('.scene-label').textContent=episode.scene;
   $('#count-icon').textContent=episode.icon;$('#count-label').textContent=episode.pickupLabel;
-  $('#boss-title').textContent=episode.bossName;
   $('#obstacle-hint').textContent=episode.obstacleHint;$('#enemy-hint').textContent=episode.enemyHint;$('#shot-hint').textContent=episode.shotHint;
   if($('#intro-copy'))$('#intro-copy').textContent=episode.intro;
 }
@@ -167,11 +152,11 @@ $('#fullscreen').onclick = async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await $('.game').requestFullscreen();
-  } catch { message('Pełny ekran możesz też włączyć klawiszem F11.'); }
+  } catch { announce('Pełny ekran możesz też włączyć klawiszem F11.'); }
 };
 document.addEventListener('fullscreenchange', () => {
   const full = !!document.fullscreenElement;
-  $('#fullscreen').textContent = full ? '⛶ Wróć' : '⛶ Pełny ekran';
+  $('#fullscreen').textContent = '⛶';
   $('#fullscreen').setAttribute('aria-label', full ? 'Wyjdź z pełnego ekranu' : 'Włącz pełny ekran');
 });
 addEventListener('keydown', event => {
@@ -189,9 +174,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && gam
 $('#world').addEventListener('webglcontextlost', event => {
   event.preventDefault();contextUnavailable=true;if(game.mode==='playing')pause();
   $('.game').setAttribute('data-context','lost');
-  message('Chwila przerwy w grafice. Twoja przygoda jest bezpieczna.');
+  announce('Chwila przerwy w grafice. Twoja przygoda jest bezpieczna.');
 });
-$('#world').addEventListener('webglcontextrestored',()=>{contextUnavailable=false;$('.game').setAttribute('data-context','ready');forest?.resize();message('Magia wróciła! Możesz jechać dalej.');});
+$('#world').addEventListener('webglcontextrestored',()=>{contextUnavailable=false;$('.game').setAttribute('data-context','ready');forest?.resize();announce('Magia wróciła! Możesz jechać dalej.');});
 $('.help')?.addEventListener('toggle',event=>{if(event.currentTarget.open&&game.mode==='playing')pause();});
 
 function frame(timestamp) {
@@ -219,7 +204,7 @@ function frame(timestamp) {
   confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=12').then(async ({ MagicForest }) => {
+import('./forest.js?v=13').then(async ({ MagicForest }) => {
   await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });
@@ -236,7 +221,7 @@ import('./forest.js?v=12').then(async ({ MagicForest }) => {
 if(typeof location!=='undefined'&&['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).has('qa')){
   let contextExtension,meter;
   Object.defineProperty(window,'__unicornQA',{value:Object.freeze({
-    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls,triangles:forest?.renderer.info.render.triangles,headAngle:forest?.mount?.userData.head.rotation.y,quality:forest?.resolutionScale}}),
+    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,view:forest?.rideView?.(),audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls,triangles:forest?.renderer.info.render.triangles,headAngle:forest?.mount?.userData.head.rotation.y,quality:forest?.resolutionScale}}),
     checkpoint:(distance,x=0)=>{game.distance=distance;game.x=x;game.stun=0;game.jumpTime=-1;game.jumpHeight=0;game.objects.forEach(o=>{if(o.type!=='boss')o.done=o.z<distance-2;});[...game.herds,...game.witches].forEach(h=>{h.elapsed=-1;h.cleared=h.z<distance-12;});game.bonus.active=false;game.bonus.finished=distance>RULES.bonusEnd;game.bonus.elapsed=0;game.flightHeight=0;game.rocks=[];accumulator=0;forest?.resetEffects();},
     loseContext:()=>{contextExtension=forest.renderer.getContext().getExtension('WEBGL_lose_context');contextExtension?.loseContext();},
     restoreContext:()=>contextExtension?.restoreContext(),

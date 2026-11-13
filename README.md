@@ -1,6 +1,6 @@
 # Unicorn Journey
 
-Gra przeglądarkowa na komputer z klawiaturą. Wersja **low-poly 3D** przedstawia dwa połączone epizody: magiczny las i świat dinozaurów. Modele koników, przeciwników i roślin są przestrzenną geometrią Three.js z płaskim cieniowaniem. Menu i HUD korzystają z lokalnej czcionki Fredoka oraz zdjęć tych samych modeli, które występują w grze.
+Gra przeglądarkowa na komputer z klawiaturą. Wersja **low-poly 3D** przedstawia dwa połączone epizody: magiczny las i świat dinozaurów. Modele koników, przeciwników i roślin są przestrzenną geometrią Three.js z płaskim cieniowaniem. Głowa w widoku z siodła jest zmniejszona o 20%, a podczas jazdy nie ma komunikatów tekstowych. Kamera w Galopie po Tęczy podąża za nachyleniem drogi i pokazuje zjazd bez przenikania pod powierzchnię. Menu i HUD korzystają z lokalnej czcionki Fredoka oraz zdjęć tych samych modeli, które występują w grze.
 
 Nowa szata jest udostępniana do testów w [prywatnym podglądzie](https://unicorn-journey-pixel-preview.paw-jan-88.chatgpt.site). Publikacja nowej wersji na GitHubie wymaga osobnej zgody właściciela. Publiczna wersja produkcyjna: [GitHub Pages](https://pawjan88.github.io/Unicorn-Journey/).
 
@@ -54,10 +54,11 @@ node scripts/render-previews.cjs
 - `dist/low-poly-models.js`: geometria postaci i środowiska, wspólne materiały oraz renderowanie kart menu.
 - `dist/forest.js`: scena, kamera z siodła, światło, cienie, animacje, pule obiektów i efekty magii.
 - `dist/game.js`: klawiatura, interfejs, pauza, wybór konika i przejście między epizodami.
+- `dist/ride-camera.js`: pozycja i orientacja kamery nad podjazdem, szczytem oraz zjazdem tęczy.
 - `dist/audio.js`, `dist/audio/`: mikser oraz nagrania. Dostarczone MP3 zachowano bez zmian.
 - `dist/characters.js`, `dist/episodes.js`: palety i konfiguracja epizodów.
 - `dist/fonts/`: Fredoka i licencja OFL; `dist/vendor/`: Three.js i licencja MIT.
 
 Otoczenie jest grupowane w `InstancedMesh`, geometria jest współdzielona, cienie mają ograniczony obszar, a rozdzielczość adaptuje się do wolniejszego renderowania. Zamiana epizodu zwalnia zasoby poprzedniej sceny. Utrata kontekstu WebGL wstrzymuje grę; po przywróceniu można kontynuować.
 
-GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/low-poly-3d` do akceptacji.
+GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/ride-visibility` do akceptacji.

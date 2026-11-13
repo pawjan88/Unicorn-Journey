@@ -2,7 +2,8 @@ import * as THREE from './vendor/three.module.js';
 import { RULES, skyHeightAt } from './rules.js?v=12';
 import { HORSES } from './characters.js?v=12';
 import { jumpHeadPose } from './animation.js?v=12';
-import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=12';
+import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=13';
+import { riderCameraPose } from './ride-camera.js?v=13';
 
 const up=new THREE.Vector3(0,1,0);
 function skyRoad(assets){
@@ -23,13 +24,6 @@ function skyRoad(assets){
     group.add(new THREE.Mesh(geometry,assets.mat(0xffe6a3,{emissive:0xe7be70,emissiveIntensity:.25})));
   }
   return group;
-}
-function labelTexture(text,wide=false){
-  const canvas=document.createElement('canvas');canvas.width=wide?768:256;canvas.height=192;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff6e5';ctx.fillRect(0,0,canvas.width,192);
-  ctx.strokeStyle='#dbb47d';ctx.lineWidth=12;ctx.strokeRect(6,6,canvas.width-12,180);
-  ctx.fillStyle='#416e60';ctx.font=`600 ${wide?64:65}px Fredoka, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,canvas.width/2,98);
-  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;return texture;
 }
 function glowTexture(){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=32;
@@ -85,15 +79,12 @@ export class MagicForest{
     this.skyPickups=Array.from({length:5},(_,i)=>{const z=RULES.bonusStart+(i+1)*(RULES.bonusEnd-RULES.bonusStart)/6;const mesh=this.isDino?a.amber():a.rainbow();mesh.scale.setScalar(.67);mesh.position.set(0,skyHeightAt(z)+1,-z);mesh.visible=false;this.scene.add(mesh);return mesh;});
     this.bonusGate=new THREE.Group();this.bonusGate.position.z=-RULES.bonusStart;this.scene.add(this.bonusGate);
     const gateArc=a.rainbow();gateArc.scale.setScalar(3.3);gateArc.position.y=.3;this.bonusGate.add(gateArc);
-    const bonusMap=labelTexture('GALOP PO TĘCZY',true);
-    const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.65,.64),new THREE.MeshStandardMaterial({map:bonusMap,roughness:.8,side:THREE.DoubleSide}));sign.position.set(0,2.18,.1);this.bonusGate.add(sign);
     if(this.isDino){
       this.volcano=a.volcano();this.volcano.position.z=-RULES.length-120;this.scene.add(this.volcano);
       this.cave=a.cave();this.cave.position.z=-RULES.length+4;this.scene.add(this.cave);
       const caveLight=new THREE.PointLight(0xffd08d,5,10,1.3);caveLight.position.set(0,2,-RULES.length+1);this.scene.add(caveLight);
     }else{
       const arch=a.rainbow();arch.scale.setScalar(7.3);arch.position.set(0,.7,-RULES.length);this.scene.add(arch);
-      const map=labelTexture('META');const banner=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.72),new THREE.MeshStandardMaterial({map,side:THREE.DoubleSide}));banner.position.set(0,3.2,-RULES.length+.06);this.scene.add(banner);
     }
     this.dragonflies=this.isDino?Array.from({length:10},()=>{const fly=a.dragonfly();this.scene.add(fly);return fly;}):[];
     this.makeEffects();
@@ -165,6 +156,7 @@ export class MagicForest{
   bossThrow(){this.bossThrowTime=.4;}
   resetEffects(){this.burst.length=0;this.shotTime=0;this.shotFresh=false;this.bossHitTime=0;this.bossThrowTime=0;this.celebration=0;this.shadowDistance=null;this.updateHead(-1);}
   celebrate(){this.celebration=4;}
+  rideView(){return {y:this.camera.position.y,z:this.camera.position.z,pitch:this.camera.rotation.x,clearance:this.camera.position.y-skyHeightAt(-this.camera.position.z),headScale:this.mount.userData.head.scale.x};}
   animate(actor,time,gait=0){
     const data=actor.userData;
     if(data.legs)data.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*.50);
@@ -180,8 +172,9 @@ export class MagicForest{
     if(this.slowFrames>=10&&this.resolutionScale>.65){this.resolutionScale=Math.max(.65,this.resolutionScale-.15);this.slowFrames=0;this.resize();}
     const a=this.assets,moving=game.mode==='playing'&&Math.abs(game.distance-this.lastDistance)>.0001,gait=game.distance*2.8;
     const bounce=this.reducedMotion?0:moving?Math.sin(gait)*.025:Math.sin(time*1.5)*.004;
-    this.camera.position.set(game.x,2.05+game.jumpHeight+game.flightHeight+bounce,1.7-game.distance);
-    const flight=game.bonus.elapsed/RULES.bonusDuration;this.camera.rotation.x=-.055+(game.bonus.active?Math.sin(flight*Math.PI*2)*.16:0);
+    const ride=riderCameraPose(game.distance);
+    this.camera.position.set(game.x,ride.y+game.jumpHeight+(game.bonus.active?0:bounce),ride.z);
+    this.camera.rotation.x=ride.pitch;
     this.camera.rotation.z=THREE.MathUtils.lerp(this.camera.rotation.z,this.reducedMotion?0:(game.x-this.lastX)*-.08,1-Math.exp(-10*dt));
     this.sky.position.copy(this.camera.position);this.skyScenery.position.z=-game.distance;
     this.skyLandscape.position.set(0,0,-game.distance-80);this.skyLandscape.visible=game.flightHeight>1;
