@@ -4,8 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const root=path.resolve(__dirname,'../dist');
-const landingOnly=process.argv.includes('--rainbow-landing');
-const output=path.resolve(process.env.PLAYTEST_OUTPUT||(landingOnly?'artifacts/landing-playtest':'artifacts/playtest'));
+const landingOnly=process.argv.includes('--rainbow-landing'),caveOnly=process.argv.includes('--cave');
+const output=path.resolve(process.env.PLAYTEST_OUTPUT||(landingOnly?'artifacts/landing-playtest':caveOnly?'artifacts/cave-playtest':'artifacts/playtest'));
 fs.mkdirSync(output,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.mp3':'audio/mpeg','.ttf':'font/ttf','.png':'image/png'};
 const server=http.createServer((req,res)=>{
@@ -32,8 +32,20 @@ async function run(){
   async function check(name,action){try{await action();report.checks.push(name);console.log('PASS:',name);}catch(error){report.failedState=await state();await shot('FAILED');throw error;}}
   await page.goto(base+'/?qa=1');
   await page.locator('#play:not([disabled])').waitFor({timeout:60000});
+  async function noCaptions(){
+    const words=await page.locator('.game').evaluate(root=>{
+      const texts=[],walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
+      while((node=walker.nextNode())){
+        if(!node.textContent.trim()||node.parentElement.closest('.sr-only,[hidden]'))continue;
+        const style=getComputedStyle(node.parentElement);if(style.visibility==='hidden'||style.display==='none')continue;
+        const range=document.createRange();range.selectNodeContents(node);const rect=range.getBoundingClientRect();
+        if(rect.width>1&&rect.height>1&&/\p{L}/u.test(node.textContent))texts.push(node.textContent.trim());
+      }
+      return texts;
+    });assert.deepEqual(words,[],'no visible captions or instructions cover the playfield');
+  }
   if(landingOnly){
-    for(const episode of ['forest','dino']){
+    for(const episode of ['forest','dino','cave']){
       if((await state()).mode==='playing'){await page.keyboard.press('Escape');await page.click('#back-menu');}
       await page.click('#episode-'+episode);await page.click('#play');
       await check(episode+': complete rainbow descent and five bonus pickups',async()=>{
@@ -50,8 +62,9 @@ async function run(){
     }
     assert.deepEqual(report.errors,[],'no browser errors or failed assets');report.result='passed';report.finishedAt=new Date().toISOString();return;
   }
-  await check('First actionable menu, local font, two episode cards and three horses',async()=>{
-    assert.equal(await page.locator('.episode-option').count(),2);assert.equal(await page.locator('#horse-picker button').count(),3);
+  if(!caveOnly){
+  await check('First actionable menu, local font, three episode cards and three horses',async()=>{
+    assert.equal(await page.locator('.episode-option').count(),3);assert.equal(await page.locator('#horse-picker button').count(),3);
     assert(await page.evaluate(()=>document.fonts.check('16px Fredoka')));assert.equal((await state()).audio.state,undefined);
     assert(await page.locator('#play').evaluate(node=>{const rect=node.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight;}));await shot('01-menu-desktop');
   });
@@ -59,20 +72,8 @@ async function run(){
     for(const horse of ['sunny','moon','rose']){await page.click('#horse-'+horse);assert.equal((await state()).horse,horse);assert.equal(await page.locator('#horse-'+horse).getAttribute('aria-pressed'),'true');}
     await page.click('#episode-dino');assert.equal((await state()).episode,'dino');await shot('02-menu-dinosaurs');
     await page.click('#episode-forest');assert.equal((await state()).horse,'rose');await page.click('#play');
-    await wait(()=>window.__unicornQA.snapshot().audio.buffers===13);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===20);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
   });
-  async function noCaptions(){
-    const words=await page.locator('.game').evaluate(root=>{
-      const texts=[],walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
-      while((node=walker.nextNode())){
-        if(!node.textContent.trim()||node.parentElement.closest('.sr-only,[hidden]'))continue;
-        const style=getComputedStyle(node.parentElement);if(style.visibility==='hidden'||style.display==='none')continue;
-        const range=document.createRange();range.selectNodeContents(node);const rect=range.getBoundingClientRect();
-        if(rect.width>1&&rect.height>1&&/\p{L}/u.test(node.textContent))texts.push(node.textContent.trim());
-      }
-      return texts;
-    });assert.deepEqual(words,[],'no visible captions or instructions cover the playfield');
-  }
   await check('Rider head reduced by 20%, deep forest and gameplay free of captions',async()=>{assert.equal((await state()).view.headScale,.8);assert((await state()).environment.deepTrees>1200);assert.equal(await page.locator('#herd-notice, #bonus-notice, .spell-hint, .scene-label').count(),0);await noCaptions();});
   await check('Hold Up to ride, release to stop, steer both ways and respect path bounds',async()=>{
     const scroll=await page.evaluate(()=>scrollY);
@@ -139,13 +140,52 @@ async function run(){
     await page.keyboard.press('Control');await page.keyboard.press('Space');assert((await state()).distance<=304.501);assert(!(await state()).giant.done);await page.keyboard.down('ArrowUp');
     await page.waitForFunction(()=>window.__unicornQA.snapshot().giant.done,null,{timeout:45000});await wait(()=>window.__unicornQA.snapshot().distance>307);await page.keyboard.up('ArrowUp');assert(!(await state()).audio.giantRoar);assert(!(await state()).environment.roarVisible);await shot('14e-giant-cleared');
   });
-  await check('Tyrannosaur, thunder music, three-hit boss, cave finish, confetti and replay',async()=>{
+  await check('Tyrannosaur boss and automatic volcano-to-cave transition',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).audio.music,'dino-thunder');await noCaptions();await shot('15-tyrannosaur');
     await page.keyboard.down('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);await page.keyboard.up('Control');
-    await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('16-finish-confetti');assert(await page.locator('#again').isVisible());await page.click('#again');assert.equal((await state()).mode,'playing');assert.equal((await state()).distance,0);
+    await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='cave');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'rose');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'cave-ambient');await shot('16-cave-arrival');
+  });
+  }else{
+    await page.click('#horse-rose');await page.click('#episode-cave');await page.click('#play');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===20);await shot('16-cave-arrival');
+  }
+  await check('Cave: original controls, fifty optional crystals and natural ambiance',async()=>{
+    assert.equal((await state()).episode,'cave');assert.equal((await state()).audio.music,'cave-ambient');assert((await state()).audio.reverb>0);assert.equal((await state()).view.headScale,.8);await noCaptions();
+    await checkpoint(11.6);const before=(await state()).count;await page.keyboard.down('ArrowUp');await wait(n=>window.__unicornQA.snapshot().count>n,before);await page.keyboard.up('ArrowUp');await shot('16b-cave-crystal');
+  });
+  await check('Cave: two consecutive jumps over chasm and fallen column',async()=>{
+    await checkpoint(28.9);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().blocked);await shot('16c-cave-chasm');await page.keyboard.press('Control');assert((await state()).blocked);
+    await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>30.5);await wait(()=>window.__unicornQA.snapshot().jumpTime===-1);await wait(()=>window.__unicornQA.snapshot().blocked);await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>35.7);await page.keyboard.up('ArrowUp');
+  });
+  await check('Cave: golem and crystal crab each need one rainbow hit',async()=>{
+    await checkpoint(43,1.12);const before=(await state()).enemiesRemaining;await shot('16d-golem-and-crab');await page.keyboard.press('Control');await wait(n=>window.__unicornQA.snapshot().enemiesRemaining===n-1,before);
+    await checkpoint(43,-.48);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);const remaining=(await state()).enemiesRemaining;await page.keyboard.press('Control');await wait(n=>window.__unicornQA.snapshot().enemiesRemaining===n-1,remaining);assert.equal((await state()).environment.beamShadowCasters,0);
+  });
+  await check('Cave: natural steam jets require waiting and pause freezes them',async()=>{
+    await checkpoint(65.5);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().crossing?.type==='steam');await wait(()=>window.__unicornQA.snapshot().audio.crossing==='cave-steam');assert((await state()).environment.cave.steamPuffs>0);await noCaptions();await shot('16e-steam');
+    await page.keyboard.press('Escape');const held=await state();await page.waitForTimeout(250);assert.equal((await state()).crossing.elapsed,held.crossing.elapsed);assert.equal((await state()).audio.crossing,null);await page.click('#resume');await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>68);await page.keyboard.up('ArrowUp');
+  });
+  await check('Cave: friendly lizard herd and membrane bats cross the route',async()=>{
+    await checkpoint(89.4);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.crossing?.type==='lizard'&&s.crossing.elapsed>1.5;});assert.equal((await state()).audio.crossing,'cave-lizards');await shot('16f-lizards');await wait(()=>window.__unicornQA.snapshot().distance>92);await page.keyboard.up('ArrowUp');
+    await checkpoint(141.9);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.crossing?.type==='bat'&&s.crossing.elapsed>1.5;});await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.crossing,'cave-bats');await shot('16g-mushrooms-and-bats');
+  });
+  await check('Cave: rainbow bridge above the lake, five gems, safe roof/descent and landing space',async()=>{
+    await checkpoint(193.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().bonus);await page.keyboard.up('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>=209);
+    assert((await state()).environment.cave.ceilingClearance>(await state()).view.y+2);await shot('16h-cave-rainbow');await wait(()=>window.__unicornQA.snapshot().distance>=219);await shot('16i-cave-rainbow-descent');await wait(()=>!window.__unicornQA.snapshot().bonus);assert.equal((await state()).bonusCount,5);const enemies=(await state()).enemiesRemaining;
+    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>=238);await page.keyboard.up('ArrowUp');assert.equal((await state()).enemiesRemaining,enemies);await shot('16j-underground-lake');
+  });
+  await check('Cave: giant crystal turtle greets the rider and safely clears the road',async()=>{
+    await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.giant.elapsed>5.6&&s.audio.giantRoar;});const greeting=await state();assert.equal(greeting.giant.type,'crystal-turtle');assert(greeting.waiting);assert.equal(greeting.giant.x,0);await noCaptions();await shot('16k-crystal-turtle');
+    await page.waitForFunction(()=>window.__unicornQA.snapshot().giant.done,null,{timeout:45000});await wait(()=>window.__unicornQA.snapshot().distance>307);await page.keyboard.up('ArrowUp');
+  });
+  await check('Cave: three-hit guardian restores the visible heart, statue clears the exit, sunlit finish and replay',async()=>{
+    await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).environment.cave.heartCharge,0);await shot('16l-obsidian-guardian');
+    for(const hp of [2,1,0]){await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(n=>{const s=window.__unicornQA.snapshot();return s.boss.hp===n&&s.environment.cave.heartCharge===3-n;},hp);assert.equal((await state()).environment.cave.heartCharge,3-hp);}
+    await shot('16m-heart-restored');await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>390);await page.keyboard.up('ArrowUp');assert.equal((await state()).environment.cave.section,'sunlit-clearing');await shot('16n-sunlit-clearing');
+    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('16o-finish-confetti');assert(await page.locator('#again').isVisible());await page.click('#again');assert.equal((await state()).mode,'playing');assert.equal((await state()).distance,0);assert.equal((await state()).boss.hp,3);assert.equal((await state()).giant.elapsed,-1);
   });
   await check('Fullscreen resizes the 3D canvas, then restores the layout',async()=>{
-    await page.click('#fullscreen');await wait(()=>!!document.fullscreenElement);await shot('17-fullscreen');await page.click('#fullscreen');await wait(()=>!document.fullscreenElement);assert((await state()).render.width<=1600);
+    await page.click('#fullscreen');await wait(()=>!!document.fullscreenElement);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await shot('17-fullscreen');await page.click('#fullscreen');await wait(()=>!document.fullscreenElement);assert((await state()).render.width<=1600);
   });
   await check('WebGL context loss pauses safely and recovery permits continuing',async()=>{
     await page.evaluate(()=>window.__unicornQA.loseContext());await wait(()=>window.__unicornQA.snapshot().mode==='paused');await page.waitForTimeout(300);await page.evaluate(()=>window.__unicornQA.restoreContext());await page.waitForTimeout(1000);await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().mode==='playing');await shot('18-context-recovered');

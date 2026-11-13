@@ -15,3 +15,9 @@
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 #message.sr-only{position:absolute;left:0;top:0;bottom:auto;transform:none;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;box-shadow:none}
 .game-actions #fullscreen{width:38px;font-size:18px;padding:8px}.boss-notice #boss-hp{margin-left:0;font-size:17px;letter-spacing:5px}
+
+/* Three picture choices retain the same compact menu. */
+.episode-picker .episode-option{width:calc((100% - 18px)/3)}
+.episode-picker .episode-option strong{font-size:11px;min-height:28px;display:grid;place-content:center;line-height:1.15}
+.game[data-episode=cave] .counter>#count-icon{background-image:url('assets/crystal-icon.svg')}
+@media(max-width:540px){.episode-picker .episode-option{width:calc((100% - 14px)/3)}.episode-picker .episode-option img{height:54px}.episode-picker .episode-option strong{font-size:10px;min-height:28px}}

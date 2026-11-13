@@ -1,5 +1,5 @@
 import { HORSES } from './characters.js?v=12';
-import { EPISODES } from './episodes.js?v=12';
+import { EPISODES } from './episodes.js?v=16';
 import { GIANT,giantPose } from './giant-encounter.js?v=14';
 export const RULES = Object.freeze({
   length:396, speed:4, halfWidth:2.1, riderRadius:.35, steerSpeed:2.45,
@@ -22,6 +22,7 @@ export class Adventure {
     this.fenceBlocked=false;this.waitingForHerd=false;this.waitingCrossing=null;this.flightHeight=0;
     this.herds=[92,183,273,361].map((z,i)=>({type:'unicorn',z,elapsed:-1,cleared:false,count:6,direction:i%2?-1:1}));
     this.witches=[57,145,325].map((z,i)=>({type:'witch',z,elapsed:-1,cleared:false,count:5,direction:i%2?-1:1}));
+    this.vents=[];
     this.bonus={active:false,finished:false,elapsed:0,items:Array.from({length:5},(_,i)=>({type:'bonusRainbow',x:0,z:RULES.bonusStart+(i+1)*(RULES.bonusEnd-RULES.bonusStart)/6,done:false}))};
     this.objects=Array.from({length:50},(_,i)=>{
       let z=12+i*334/49;if(z>=RULES.bonusStart)z+=RULES.bonusEnd-RULES.bonusStart;
@@ -51,8 +52,21 @@ export class Adventure {
       }
       this.boss.species='tyrannosaurus';
     }
+    if(this.episodeId==='cave'){
+      this.herds.forEach(herd=>{herd.type='lizard';herd.species='crystal-lizard';});
+      this.witches.forEach(herd=>{herd.type='bat';});
+      this.vents=[68,118].map(z=>({type:'steam',z,elapsed:-1,cleared:false,duration:4.5}));
+      let obstacleIndex=0;
+      for(const object of this.objects){
+        if(object.type==='fence')object.obstacle=obstacleIndex++%2?'column':'chasm';
+        if(object.type==='troll')object.species='stone-golem';
+        if(object.type==='dragon')object.species='crystal-crab';
+        if(object.type==='rainbow')object.species='crystal';
+      }
+      this.boss.species='obsidian-guardian';
+    }
     this.rocks=[];this.rockId=0;this.bossRollClock=0;
-    this.giant=this.episodeId==='dino'?{type:'giganotosaurus',z:GIANT.z,elapsed:-1,done:false,roared:false,lastStep:-1,...giantPose(-1)}:null;
+    this.giant=this.episodeId!=='forest'?{type:this.episodeId==='cave'?'crystal-turtle':'giganotosaurus',z:GIANT.z,elapsed:-1,done:false,roared:false,lastStep:-1,...giantPose(-1)}:null;
   }
   selectEpisode(id) {
     if(!EPISODES[id]||!['intro','finished'].includes(this.mode))return false;
@@ -102,7 +116,7 @@ export class Adventure {
     }
   }
   updateCrossings(dt,next,previous){
-    for(const herd of [...this.herds,...this.witches]){
+    for(const herd of [...this.herds,...this.witches,...this.vents]){
       if(herd.cleared)continue;
       if(herd.elapsed<0){
         if(previous>herd.z+1){herd.cleared=true;continue;}
@@ -110,7 +124,7 @@ export class Adventure {
         herd.elapsed=0;this.onEvent({type:'herdStart',herd});
       }
       herd.elapsed+=dt;
-      if(herd.elapsed>=RULES.herdDuration){herd.cleared=true;this.onEvent({type:'herdEnd',herd});}
+      if(herd.elapsed>=(herd.duration||RULES.herdDuration)){herd.cleared=true;this.onEvent({type:'herdEnd',herd});}
       else if(next>=herd.z-RULES.herdStopDistance){next=Math.min(next,herd.z-RULES.herdStopDistance);this.waitingForHerd=true;this.waitingCrossing=herd;}
     }
     return next;

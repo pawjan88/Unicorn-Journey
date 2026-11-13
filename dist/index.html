@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="pl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#1b2038"><meta name="description" content="Unicorn Journey — dwa magiczne światy i jedna wielka przygoda. Wybierz jednorożca i ruszaj po tęcze!">
+<meta name="theme-color" content="#1b2038"><meta name="description" content="Unicorn Journey — trzy magiczne światy i jedna wielka przygoda. Wybierz jednorożca i ruszaj po tęcze!">
 <title>Unicorn Journey · Mała wielka przygoda</title><link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preload" href="fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin><link rel="stylesheet" href="style.css?v=13">
+<link rel="preload" href="fonts/fredoka.ttf" as="font" type="font/ttf" crossorigin><link rel="stylesheet" href="style.css?v=16">
 </head><body>
 <header><a class="brand" href="./" aria-label="Unicorn Journey — ekran startowy"><span class="brand-star" aria-hidden="true">✦</span> UNICORN <b>JOURNEY</b></a><span class="edition">MAGICZNY LAS · PRZYGODA 01</span><button id="sound" aria-label="Wyłącz muzykę i efekty" aria-pressed="true">♫ Dźwięk: wł.</button></header>
 <main>
-<div class="heading"><div><div class="eyebrow">ODROBINA MAGII. MNÓSTWO ODKRYĆ.</div><h1>Jednorożec w <em>Tęczowym Lesie</em></h1><p>Wskocz na grzbiet jednorożca i zobacz magię z bliska.</p></div><span class="world-tag">DWA ŚWIATY <i>✦</i> JEDNA PRZYGODA</span></div>
+<div class="heading"><div><div class="eyebrow">ODROBINA MAGII. MNÓSTWO ODKRYĆ.</div><h1>Jednorożec w <em>Tęczowym Lesie</em></h1><p>Wskocz na grzbiet jednorożca i zobacz magię z bliska.</p></div><span class="world-tag">TRZY ŚWIATY <i>✦</i> JEDNA PRZYGODA</span></div>
 <section class="game" data-mode="intro" aria-label="Unicorn Journey — gra przygodowa">
 <canvas id="world" width="640" height="360" tabindex="0" aria-label="Widok z siodła jednorożca. Przytrzymaj strzałkę w górę, skręcaj strzałkami w bok, skacz spacją i strzelaj tęczową magią klawiszem Ctrl."></canvas>
 <div class="hud"><div class="counter"><span id="count-icon" aria-hidden="true">🌈</span><div><b id="count">0 <small>/ 50</small></b><label id="count-label" class="sr-only">ZEBRANE TĘCZE</label><small id="bonus-count" hidden></small></div></div><div class="journey"><span aria-hidden="true">●</span><div><i id="progress"></i></div><span aria-hidden="true">⚑</span></div><div class="game-actions"><button id="fullscreen" aria-label="Włącz pełny ekran">⛶</button><button id="pause" aria-label="Pauza">Ⅱ</button></div></div>
@@ -15,11 +15,11 @@
 <div class="pill"><span></span> GOTOWI NA ODKRYWANIE?</div><h2>Wskakuj.<br><em>Przygoda czeka!</em></h2><p id="intro-copy">Zbieraj tęcze i używaj magii swojego roga.</p>
 <div class="choice-label"><b>01</b> WYBIERZ SWÓJ ŚWIAT</div><div id="episode-picker" class="episode-picker" role="group" aria-label="Wybierz epizod"></div>
 <div class="choice-label"><b>02</b> POZNAJ SWOJEGO KONIKA</div><div id="horse-picker" class="horse-picker" role="group" aria-label="Wybierz jednorożca"></div>
-<button id="play" class="primary" disabled>Budzi się magia…</button><small><kbd>↑</kbd> Przytrzymaj, żeby jechać. <span>Przygoda czeka!</span></small></div><div class="menu-stamp" aria-hidden="true"><span>✦</span> Dwa magiczne światy.<br>Trzy wyjątkowe koniki.</div></div>
+<button id="play" class="primary" disabled>Budzi się magia…</button><small><kbd>↑</kbd> Przytrzymaj, żeby jechać. <span>Przygoda czeka!</span></small></div><div class="menu-stamp" aria-hidden="true"><span>✦</span> Trzy magiczne światy.<br>Trzy wyjątkowe koniki.</div></div>
 <canvas id="confetti" aria-hidden="true"></canvas><div id="message" class="sr-only" role="status"></div>
 <div id="boss-notice" class="boss-notice" hidden aria-live="polite"><span id="boss-hp" aria-hidden="true">●●●</span></div>
 </section>
 <details class="help"><summary>Jak grać? <span>Strzałki · spacja · Ctrl</span><b>+</b></summary><div class="instructions">
 <div><kbd>↑</kbd><span><b>Jedź do przodu</b><small>Przytrzymaj strzałkę</small></span></div><div><kbd>←</kbd><kbd>→</kbd><span><b>Skręcaj</b><small id="enemy-hint">Omijaj trolle i smoki</small></span></div>
 <div><kbd class="space">spacja</kbd><span><b>Podskakuj</b><small id="obstacle-hint">Dwa płotki? Dwa skoki.</small></span></div><div><kbd class="space">Ctrl</kbd><span><b>Tęczowa magia</b><small id="shot-hint">Troll na mecie: 3 trafienia</small></span></div><p>Esc: pauza. Przed stadem poczekaj. Zbieranie wszystkich skarbów jest opcjonalne.</p>
-</div></details></main><footer><span>ZROBIONE Z ODROBINY MAGII <i>✦</i></span><span>BEZ LIMITU CZASU · BEZ UTRATY ŻYĆ</span></footer><script type="module" src="game.js?v=15"></script></body></html>
+</div></details></main><footer><span>ZROBIONE Z ODROBINY MAGII <i>✦</i></span><span>BEZ LIMITU CZASU · BEZ UTRATY ŻYĆ</span></footer><script type="module" src="game.js?v=16"></script></body></html>

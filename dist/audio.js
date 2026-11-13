@@ -14,6 +14,13 @@ const FILES = {
   'dino-call': 'dino-call.mp3',
   'ptero-call': 'ptero-call.mp3',
   'giant-roar':'giant-roar.mp3',
+  'cave-ambient':'cave-ambient.mp3',
+  'cave-rock':'cave-rock.mp3',
+  'cave-steam':'cave-steam.mp3',
+  'cave-bats':'cave-bats.mp3',
+  'cave-lizards':'cave-lizards.mp3',
+  'cave-turtle':'cave-turtle.mp3',
+  'cave-crystal':'cave-crystal.mp3',
 };
 export class AdventureAudio {
   constructor() {
@@ -31,6 +38,7 @@ export class AdventureAudio {
     this.witchLaugh = null;
     this.dinoCrossing = null;
     this.giantRoar=null;this.giantRoarGain=null;this.giantRoarFinished=false;
+    this.episodeId='forest';this.crossingTrack=null;
     this.musicVolume=.25;this.effectsVolume=.85;this.duckUntil=0;
     // Fetching files does not start audio or create an AudioContext.
     this.files = Promise.all(Object.entries(FILES).map(async ([name, file]) => {
@@ -56,6 +64,13 @@ export class AdventureAudio {
           this.master.connect(limiter).connect(this.context.destination);
         }else this.master.connect(this.context.destination);
         this.effectsGain=this.context.createGain();this.effectsGain.gain.value=this.effectsVolume;this.effectsGain.connect(this.master);
+        // A short room response adds natural cave reflections to the recorded foley.
+        if(this.context.createConvolver&&this.context.createBuffer){
+          const reverb=this.context.createConvolver(),length=Math.floor(this.context.sampleRate*1.15),response=this.context.createBuffer(2,length,this.context.sampleRate);
+          for(let channel=0;channel<2;channel++){const samples=response.getChannelData(channel);for(let i=0;i<length;i++)samples[i]=(Math.random()*2-1)*Math.exp(-i/length*7)*.32;}
+          reverb.buffer=response;this.reverbGain=this.context.createGain();this.reverbGain.gain.value=0;
+          this.effectsGain.connect(reverb).connect(this.reverbGain).connect(this.master);
+        }
         this.musicGain = this.context.createGain();
         this.musicGain.gain.value = this.musicVolume;
         this.musicGain.connect(this.master);
@@ -82,11 +97,14 @@ export class AdventureAudio {
   }
   setPlaying(playing) {
     this.playing = playing;
+    this.reverbGain?.gain.setTargetAtTime(playing&&this.episodeId==='cave'?.16:0,this.context.currentTime,.05);
     if (playing) this.startMusic();
     else { this.stopMusic(); this.stopEffects(); }
   }
   setMusicState(episodeId, bossActive=false) {
-    const next=episodeId==='dino'?(bossActive?'dino-thunder':'dino-ambient'):'forest-music';
+    this.episodeId=episodeId;
+    this.reverbGain?.gain.setTargetAtTime(this.playing&&episodeId==='cave'?.16:0,this.context.currentTime,.1);
+    const next=episodeId==='cave'?'cave-ambient':episodeId==='dino'?(bossActive?'dino-thunder':'dino-ambient'):'forest-music';
     if(next===this.musicTrack)return;
     this.stopMusic();this.trackOffsets.set(this.musicTrack,this.musicOffset);
     this.musicTrack=next;this.musicOffset=this.trackOffsets.get(next)||0;
@@ -119,17 +137,21 @@ export class AdventureAudio {
   }
   effect(name, volume = .5, rate = 1) {
     if (!this.enabled || !this.context || this.context.state !== 'running') return;
+    const requested=name;
+    if(this.episodeId==='cave')name=({bump:'cave-rock',collect:'cave-crystal','magic-shot':'cave-steam'})[name]||name;
     const buffer = this.buffers.get(name);
     if (!buffer) return;
     if(this.effects.size>=12){const oldest=this.effects.values().next().value;this.effects.delete(oldest);try{oldest.stop();}catch{}oldest.disconnect();}
-    if(name==='neigh'||name==='magic-shot')this.duckUntil=this.context.currentTime+.65;
+    if(requested==='neigh'||requested==='magic-shot')this.duckUntil=this.context.currentTime+.65;
     if (name === 'neigh' && this.neigh) { try { this.neigh.stop(); } catch {} }
     const source = this.context.createBufferSource(), gain = this.context.createGain();
     if (name === 'neigh') this.neigh = source;
     source.buffer = buffer; source.playbackRate.value = rate; gain.gain.value = volume;
     source.connect(gain).connect(this.effectsGain); this.effects.add(source);
     source.onended = () => { this.effects.delete(source); if (this.neigh === source) this.neigh = null; source.disconnect(); gain.disconnect(); };
-    source.start();
+    if(this.episodeId==='cave'&&requested==='magic-shot'){
+      gain.gain.setTargetAtTime(0,this.context.currentTime+.25,.08);source.start(0,0,.6);
+    }else source.start();
   }
   startHooves() {
     if (this.hooves || !this.playing || !this.enabled || !this.context || this.context.state !== 'running') return;
@@ -172,19 +194,20 @@ export class AdventureAudio {
     source.disconnect();
   }
   updateDinoCrossing(crossing) {
-    const name=crossing?.type==='dinosaur'?'dino-call':crossing?.type==='pterodactyl'?'ptero-call':null;
+    const name=({dinosaur:'dino-call',pterodactyl:'ptero-call',lizard:'cave-lizards',bat:'cave-bats',steam:'cave-steam'})[crossing?.type]||null;
     if(!name||crossing.elapsed<0||crossing.cleared||!this.playing||!this.enabled||!this.context||this.context.state!=='running'){this.stopDinoCrossing();return;}
+    if(this.dinoCrossing&&this.crossingTrack!==name)this.stopDinoCrossing();
     if(this.dinoCrossing)return;
     const buffer=this.buffers.get(name);if(!buffer)return;
     const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=.25;
     source.connect(gain).connect(this.effectsGain);source.onended=()=>{if(this.dinoCrossing===source)this.dinoCrossing=null;source.disconnect();gain.disconnect();};
-    this.dinoCrossing=source;source.start(0,crossing.elapsed%buffer.duration);
+    this.dinoCrossing=source;this.crossingTrack=name;source.start(0,crossing.elapsed%buffer.duration);
   }
-  stopDinoCrossing(){if(!this.dinoCrossing)return;const source=this.dinoCrossing;this.dinoCrossing=null;try{source.stop();}catch{}source.disconnect();}
+  stopDinoCrossing(){this.crossingTrack=null;if(!this.dinoCrossing)return;const source=this.dinoCrossing;this.dinoCrossing=null;try{source.stop();}catch{}source.disconnect();}
   updateGiant(giant){
     if(!giant||giant.done||giant.elapsed<GIANT.roarAt||giant.elapsed>=GIANT.roarEnd||!this.playing||!this.enabled||!this.context||this.context.state!=='running'){this.stopGiant();return;}
     if(this.giantRoar||this.giantRoarFinished)return;
-    const buffer=this.buffers.get('giant-roar'),offset=giant.elapsed-GIANT.roarAt;
+    const buffer=this.buffers.get(giant.type==='crystal-turtle'?'cave-turtle':'giant-roar'),offset=giant.elapsed-GIANT.roarAt;
     if(!buffer)return;if(offset>=buffer.duration){this.giantRoarFinished=true;return;}
     const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;gain.gain.value=.62;
     source.connect(gain).connect(this.effectsGain);this.giantRoar=source;this.giantRoarGain=gain;

@@ -33,7 +33,7 @@ await app.link(spec=>modules[Object.keys(modules).find(key=>spec.includes(key+'.
 const ui=app.namespace;
 assert.equal($('#episode-forest').attributes['aria-pressed'],'true');
 assert($('#episode-picker').innerHTML.includes('horse-option episode-option'));assert($('#episode-picker').innerHTML.includes('episode-forest.png'));assert($('#episode-picker').innerHTML.includes('episode-dino.png'));
-for(const id of ['forest','dino'])assert(fs.existsSync(new URL('../dist/assets/episode-'+id+'.png',import.meta.url)));
+for(const id of ['forest','dino','cave'])assert(fs.existsSync(new URL('../dist/assets/episode-'+id+'.png',import.meta.url)));
 $('#horse-moon').onclick();$('#episode-dino').onclick();assert.equal(ui.game.episodeId,'dino');assert.equal(ui.game.horseId,'moon');assert.equal($('#episode-dino').attributes['aria-pressed'],'true');assert.equal($('#episode-forest').attributes['aria-pressed'],'false');
 $('#episode-forest').onclick();ui.start();
 function key(code,type='keydown'){listeners[type]({code,repeat:false,preventDefault(){}});}
@@ -45,7 +45,9 @@ assert.equal($('#overlay').hidden,true);assert.equal(ui.forest.episodeId,'dino')
 const dinoScene=ui.forest;ui.frame(50);ui.frame(70);assert(ui.game.distance>0,'continuing to hold Up moves without a new keypress');assert.equal(ui.forest,dinoScene,'transition fires once');
 ui.pause();const stopped=ui.game.distance;ui.frame(90);assert.equal(ui.game.distance,stopped);ui.pause();key('ArrowUp');
 ui.game.objects.forEach(o=>o.done=true);[...ui.game.herds,...ui.game.witches].forEach(h=>h.cleared=true);ui.game.bonus.finished=true;ui.game.distance=RULES.length-.03;ui.frame(110);ui.frame(130);
-assert.equal(ui.game.mode,'finished');assert.equal(ui.game.episodeId,'dino');assert.equal(ui.forest,dinoScene);assert.equal($('#overlay').hidden,false,'last episode still shows congratulations');assert.equal(ui.sound.playing,false);
-ui.showStart();assert.equal($('#episode-dino').attributes['aria-pressed'],'true');$('#episode-forest').onclick();assert.equal(ui.game.episodeId,'forest');assert.equal(ui.game.mode,'intro');assert.equal(ui.game.horseId,'moon');
-ui.start();key('ArrowUp');ui.frame(330);assert(ui.game.distance>.7&&ui.game.distance<.85,'a 200ms render frame advances elapsed simulation time instead of slowing the game to 60ms');
-console.log('PASS: episode picture cards and selected states, immediate forest-to-dinosaur transition, chosen horse and held keys preserved, one transition, safe simulation step, confetti/audio handoff, final congratulations, menu return and low-FPS timing');
+assert.equal(ui.game.mode,'playing');assert.equal(ui.game.episodeId,'cave');assert(dinoScene.disposed);assert.equal(ui.sound.state.episodeId,'cave');assert(ui.keys.has('ArrowUp'));const caveScene=ui.forest;
+ui.game.objects.forEach(o=>o.done=true);[...ui.game.herds,...ui.game.witches,...ui.game.vents].forEach(h=>h.cleared=true);ui.game.bonus.finished=true;ui.game.distance=RULES.length-.03;ui.frame(150);ui.frame(170);
+assert.equal(ui.game.mode,'finished');assert.equal(ui.game.episodeId,'cave');assert.equal(ui.forest,caveScene);assert.equal($('#overlay').hidden,false,'last episode still shows congratulations');assert.equal(ui.sound.playing,false);
+ui.showStart();assert.equal($('#episode-cave').attributes['aria-pressed'],'true');$('#episode-forest').onclick();assert.equal(ui.game.episodeId,'forest');assert.equal(ui.game.mode,'intro');assert.equal(ui.game.horseId,'moon');
+ui.start();key('ArrowUp');ui.frame(370);assert(ui.game.distance>.7&&ui.game.distance<.85,'a 200ms render frame advances elapsed simulation time instead of slowing the game to 60ms');
+console.log('PASS: episode picture cards and selected states, immediate forest-to-dinosaur-to-cave transitions, chosen horse and held keys preserved, one transition, safe simulation step, confetti/audio handoff, final congratulations, menu return and low-FPS timing');

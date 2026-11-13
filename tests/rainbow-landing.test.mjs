@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {Adventure,RULES} from '../dist/rules.js';
 
-for(const episode of ['forest','dino']){
+for(const episode of ['forest','dino','cave']){
   const events=[],game=new Adventure(event=>events.push(event));
   game.selectEpisode(episode);game.start();
   const enemies=game.objects.filter(object=>['troll','dragon'].includes(object.type)&&object.z>RULES.bonusEnd);
@@ -24,4 +24,4 @@ for(const episode of ['forest','dino']){
   assert.equal(events.at(-1).type,'shot');assert.equal(events.at(-1).target,first,'magic hits the relocated opponent');
   game.start();assert.equal(game.objects.filter(object=>object.type==='troll'&&object.z>RULES.bonusEnd)[0].z,first.z,'replay preserves the safe landing');
 }
-console.log('PASS: both episodes provide four seconds before the first post-rainbow enemy pair; three seconds of safe travel, working shots, five bonus pickups and replay');
+console.log('PASS: all three episodes provide four seconds before the first post-rainbow enemy pair; three seconds of safe travel, working shots, five bonus pickups and replay');

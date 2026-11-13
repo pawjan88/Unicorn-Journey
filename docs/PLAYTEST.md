@@ -1,74 +1,33 @@
-# Unicorn Journey — low-poly 3D: raport testów
+# Unicorn Journey — trzy epizody low-poly 3D: raport testów
 
-Status: gotowa wersja do testów właściciela, bez publikacji zmian na GitHubie.
+Wersja do prywatnych testów właściciela. Nowa wersja nie jest publikowana na GitHubie.
 
-## Odstęp po zjeździe z tęczy
+## Zakres
 
-- Pierwsza para przeciwników po tęczy została przesunięta z 229,8 m na 242 m trasy. Od końca tęczy (226 m) dzieli ją teraz 16 m, czyli cztery sekundy jazdy zamiast 0,95 s.
-- Zmiana obejmuje trolla i smoka w lesie oraz triceratopsa i diplodoka w dżungli. Obie postacie w parze pozostają obok siebie, przed kolejną parą przeszkód.
-- `npm test`: 12 zestawów, 0 niepowodzeń; obejmuje pełne przejazdy obu epizodów i regresję bezpiecznego zjazdu, działania strzału oraz ponownego rozpoczęcia.
-- `npm run test:landing`: 4 scenariusze w Chromium, 6 zrzutów. Sprawdza pełny przejazd po tęczy, pięć bonusowych przedmiotów, trzy sekundy jazdy bez zderzenia po lądowaniu i trafienie odsuniętego przeciwnika w każdym epizodzie.
-- Bieżący raport i zrzuty: `artifacts/landing-playtest/`.
+- Trzy obrazkowe karty epizodów i trzy koniki. Wybór maści, kopyt i roga zachowuje się w kolejnych światach.
+- Kampania przechodzi bez dodatkowego kliknięcia z lasu do dinozaurów, następnie po wjeździe do wulkanu do jaskiń. Wynik i ponowny start pojawiają się po trzecim epizodzie.
+- Jaskinie mają lawowe tunele, grotę grzybów i kryształów, podziemne jezioro, komnatę Serca i wyjazd na słoneczną polanę. Sklepienie pozostaje ponad całą tęczą i wielkim żółwiem. Sceneria jest grupowana w instancje.
+- Zbieramy 50 opcjonalnych kryształów. Szczeliny i przewrócone kolumny wymagają skoku; zachowano pięć podwójnych przeszkód.
+- Golemy i kryształowe kraby wymagają jednego trafienia. Przyjazne jaszczurki, nietoperze i żółw przecinają drogę; para wymaga oczekiwania. Tych przeszkód nie usuwa magia ani skok.
+- Tęczowy most nad jeziorem daje pięć bonusowych kryształków. Po zjeździe do pierwszej pary przeciwników pozostaje 16 m, czyli około czterech sekund jazdy, we wszystkich epizodach.
+- Obsydianowy Strażnik toczy kamienie i wymaga trzech trafień. Zapalają się kryształy pancerza i trzy części Serca; po wygranej posąg odsuwa się na bok, a jaskinia rozjaśnia się przy wyjeździe. Na końcu wybucha konfetti.
+- Zachowano sterowanie strzałkami, spacją i Ctrl, głowę w siodle mniejszą o 20%, brak napisów na trasie, brak cienia promienia i bezpieczny zjazd z tęczy.
 
-## Aktualne rozszerzenie świata
+## Dźwięk
 
-- Dodano ponad 1300 drzew w głębi każdego świata, do 100 metrów na boki i ponad 600 metrów w głąb. Tło jest grupowane w mniej niż 15 dodatkowych partii instancji. Zagęszczono także drzewa i roślinność na bliższych planach. Korony, liście i podłoże mają proceduralne tekstury zachowujące styl low-poly.
-- Wszystkie elementy tęczowego promienia mają wyłączone rzucanie i odbieranie cienia; cienie otoczenia pozostają.
-- Pterodaktyle mają długie dzioby, kostny grzebień, łapy z pazurami i błoniaste skrzydła rozpięte na długich palcach. Stada małych dinozaurów zastąpiono małymi stegozaurami z dziewięcioma płytami w dwóch rzędach i czterema kolcami ogonowymi.
-- Rzeki lawy mają 180 metrów szerokości świata, płyną przez dżunglę poza drogą, meandrują i dopasowują wysokość do terenu. Animowane są tekstura, jasne smugi i żar powierzchni. Rzeka pozostaje widoczna po przeskoczeniu.
-- W drugim epizodzie jest jeden ogromny giganotozaur. Przechodzi z lewej strony, zatrzymuje się na środku drogi, patrzy na gracza, otwiera szczękę i ryczy, następnie odchodzi. Gracz musi poczekać; magia i skok nie pozwalają ominąć blokady. Po ponownym rozpoczęciu gry spotkanie się odtwarza.
-- Kroki poruszają kamerą i mają ciężki dźwięk; ryk jest zsynchronizowany ze sceną. Pauza zatrzymuje scenę i dźwięk, wyciszenie działa, wznowienie kontynuuje od bieżącego miejsca. Ograniczony ruch wyłącza drżenie kamery. Nie dodano komunikatów na trasie.
-- Zachowano wcześniejsze poprawki: głowa w siodle mniejsza o 20%, brak tekstowych nakładek podczas jazdy, kamera i cały konik ponad powierzchnią tęczy przy zjeździe.
+Dołączono siedem lokalnych plików jaskiniowych: wodę i powietrze, kamienie, parę, nietoperze i skrzydła, małe gady, oddech żółwia oraz nagrany kryształowy dzwonek. Źródła CC0, autorzy, obróbka i charakter każdego pliku opisano w `dist/audio/CAVE-SOURCES.md`. Pomruk żółwia jest gotowym naturalistycznym foley AI, nie nagraniem terenowym żółwia. Pozostałe efekty bazują na nagraniach i foley.
 
-## Zakres zmiany
+Dostarczone MP3 konia, owadów, dżungli i grzmotów pozostają bez zmian. W jaskiniach kopyta i rżenie mają krótki pogłos; magia brzmi jak delikatny strumień powietrza. Działają pauza, wyciszenie i osobne suwaki. Mikser ładuje 20 buforów, ogranicza nakładanie efektów, a nieobecny plik dźwiękowy nie blokuje gry.
 
-- Wszystkie postacie i elementy środowiska zostały zastąpione przestrzennymi modelami z płaskim cieniowaniem: jednorożec w widoku z siodła, koniki stadne, zbrojne trolle, smoki, czarownice, dinozaury, pterodaktyle, drzewa, palmy, paprocie, skały, zamek, wulkan i jaskinia.
-- Głowa konika obraca się przestrzennie; oko i pysk są widoczne w skoku. Koniec magicznego promienia podąża za rzeczywistym położeniem roga.
-- Menu, HUD, ikony, konfetti i typografia zostały dostosowane do nowej oprawy. Karty wyboru są renderowane z tych samych modeli co w grze. Dołączono lokalną czcionkę Fredoka z licencją OFL.
-- Zachowano oba epizody, wybór trzech koników, 50 przedmiotów, pięć par przeszkód, stada, latające grupy, tęczowy galop, bossów wymagających trzech trafień i automatyczne przejście między epizodami.
-- Dostarczone MP3 i zasady rozgrywki pozostają zachowane.
+## Weryfikacja
 
-## Poprawki po testach
+- `npm test`: 15 zestawów, 0 niepowodzeń; testy reguł, pełne przejazdy trzech epizodów, wybory i przejścia, audio, animacja, konstrukcja modeli, sklepienie i jezioro, Serce oraz odstęp po tęczy.
+- `npm run test:browser`: 31 scenariuszy, 41 zrzutów, 0 błędów JavaScript i nieudanych żądań zasobów.
+- `npm run test:cave`: 15 scenariuszy, 20 zrzutów, 0 błędów; osobny przebieg trzeciego epizodu i końcowych ujęć, z ponownym sprawdzeniem interfejsu, pauzy, pełnego ekranu, kontekstu WebGL i ograniczonego ruchu.
+- `npm run test:landing`: osobny scenariusz zjazdu, spokojnego odcinka i trafiania przeciwnika w każdym z trzech światów.
 
-- Puszczenie strzałki w górę lub rozpoczęcie skoku od razu zatrzymuje dźwięk kopyt, także przy wolniejszym renderowaniu.
-- Otoczenie połączono w duże grupy instancji; materiały powierzchni uproszczono do oświetlenia odpowiedniego dla stylu low-poly. Metalowe elementy zachowują połysk.
-- Rozdzielczość renderowania może łagodnie zmniejszyć się na wolniejszym urządzeniu; tekst menu pozostaje niezależną, ostrą warstwą DOM.
-- Początek tęczowego strzału jest wyświetlany co najmniej przez jedną klatkę i pozostaje na końcu obracającego się roga.
-- Przy niskiej liczbie klatek krótki impuls drżenia mógł wygasnąć jeszcze przed rysowaniem. Nowy impuls jest wyświetlany przynajmniej przez jedną klatkę. Drżenie nie sumuje obrotu kamery, więc pauza nie powoduje jej dryfowania.
-- Poprzednie ilustracje i moduł pixel art usunięto z dystrybucji.
+Scenariusze przeglądarkowe używają rzeczywistych klawiszy i Web Audio. Lokalne punkty kontrolne przyspieszają dotarcie do przeszkód, bonusu, spotkań i bossów. Pełne przejazdy sprawdzają dodatkowo testy symulacji. Narzędzia QA działają tylko na localhost z parametrem `?qa=1`.
 
-## Ostatni pełny przegląd przed zmianą odstępu
+Zrzuty oceniano wizualnie pod kątem widoczności drogi, postaci, sklepienia, zjazdu i Serca. Przy pełnym ekranie test czeka na dwie klatki po zmianie rozmiaru płótna, aby ocenić wyrenderowaną scenę. Menu jest sprawdzane w rozmiarach 1440 × 960 i 390 × 844.
 
-- `npm test`: 11 zestawów, 0 niepowodzeń. Obejmuje reguły i pełne przejazdy obu epizodów, wejście, audio, animację, wybory, przejścia oraz budowę modeli 3D i ich palety.
-- `npm run test:browser`: 23 scenariusze, 0 niepowodzeń; 27 zrzutów ekranu.
-- Końcowy przebieg: 0 błędów JavaScript i 0 nieudanych żądań zasobów.
-- Chromium headless z programowym renderowaniem WebGL. Okna 1440 × 960 i 390 × 844 oraz tryb pełnego ekranu.
-- Scenariusze używają rzeczywistych klawiszy i sygnału Web Audio. Lokalne punkty kontrolne przyspieszają dotarcie do przeszkód, lotu, bossów i mety. To nie jest benchmark fizycznego komputera gracza ani test pozostałych silników przeglądarek.
-
-## Scenariusze
-
-1. First actionable menu, local font, two episode cards and three horses
-2. Episode selection and all three coat/horn palettes
-3. Rider head reduced by 20%, deep forest and gameplay free of captions
-4. Hold Up to ride, release to stop, steer both ways and respect path bounds
-5. Space jumps, head shows face and eye, pause freezes the jump and effects
-6. Actual Web Audio signal, global mute, resume and independent volume sliders
-7. Solid fence and two consecutive jumps
-8. Ctrl rainbow shot destroys an enemy without a shot popup
-9. Crossing herd blocks forward travel and clears after waiting
-10. Witch crossing and pause prevent movement and lingering hoof audio
-11. Rainbow sky road rises above forest, awards five bonus pickups and lands safely
-12. Forest boss needs three hits, then Episode 1 automatically continues into Episode 2
-13. Deep jungle, flowing lava river, jump and leathery pterodactyl crossing
-14. Baby stegosaurus herd stops traffic and clears safely
-15. Giganotosaurus walks, shakes the camera, stops, roars, opens its jaw and clears the road
-16. Tyrannosaur, thunder music, three-hit boss, cave finish, confetti and replay
-17. Fullscreen resizes the 3D canvas, then restores the layout
-18. WebGL context loss pauses safely and recovery permits continuing
-19. Keyboard navigation and return to menu preserve the selected horse
-20. Mobile menu has no horizontal overflow and Start stays reachable
-21. Reduced motion disables decorative UI transitions
-22. Reduced motion suppresses giant camera shake
-23. Normal URL exposes no QA controls
-
-Zrzuty i surowy raport: `artifacts/playtest/`. Katalog artefaktów jest wyłączony z Git.
+Raporty i obrazy: `artifacts/playtest/`, `artifacts/cave-playtest/`, `artifacts/landing-playtest/` (artefakty poza Git). Chromium z programowym WebGL; wyniki nie stanowią benchmarku fizycznego komputera ani weryfikacji wszystkich silników przeglądarek.
