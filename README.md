@@ -4,7 +4,7 @@ Gra przeglądarkowa na komputer z klawiaturą. Wersja **low-poly 3D** przedstawi
 
 **[Zagraj w przeglądarce](https://pawjan88.github.io/Unicorn-Journey/)** · [Repozytorium GitHub](https://github.com/pawjan88/Unicorn-Journey)
 
-Czwarty epizod i lodowy jednorożec są dostępne w [prywatnym podglądzie testowym](https://unicorn-journey-pixel-preview.paw-jan-88.chatgpt.site). Publiczna wersja GitHub Pages zachowuje ostatnie zatwierdzone trzy epizody. Publikacja nowych zmian na GitHubie wymaga akceptacji właściciela.
+Cztery epizody i Lodowa Iskierka są dostępne w publicznej wersji GitHub Pages po pozytywnych testach i akceptacji właściciela. Kraina Lodu kończy się pokonaniem Króla Mrozu i uwolnieniem Elzy oraz Anny.
 
 ## Sterowanie
 
@@ -80,4 +80,4 @@ node scripts/render-ice-horse-preview.cjs
 
 Otoczenie jest grupowane w `InstancedMesh`, geometria jest współdzielona, cienie mają ograniczony obszar, a rozdzielczość adaptuje się do wolniejszego renderowania. Zamiana epizodu zwalnia zasoby poprzedniej sceny. Utrata kontekstu WebGL wstrzymuje grę; po przywróceniu można kontynuować.
 
-GitHub Actions uruchamia testy i publikuje `dist/` w GitHub Pages po zmianie na `main`. Bieżące prace pozostają lokalnie na gałęzi `refresh/ice-kingdom` oraz w prywatnym podglądzie do akceptacji.
+GitHub Actions uruchamia testy i publikuje `dist/` w GitHub Pages po zmianie na `main`. Wersja z czterema epizodami i kryształowym jednorożcem została zatwierdzona przez właściciela do publikacji.

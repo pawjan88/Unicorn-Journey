@@ -1,6 +1,6 @@
 # Unicorn Journey — Kraina Lodu i kryształowy jednorożec
 
-Czwarty epizod oraz Lodowa Iskierka są przygotowane do prywatnych testów właściciela. Publiczna gra na GitHubie pozostaje przy ostatniej zatwierdzonej wersji z trzema epizodami.
+Czwarty epizod oraz Lodowa Iskierka przeszły testy automatyczne i prywatne testy właściciela. Po pozytywnym wyniku właściciel zatwierdził aktualizację publicznego repozytorium i GitHub Pages do wersji z czterema epizodami.
 
 ## Zakres
 
