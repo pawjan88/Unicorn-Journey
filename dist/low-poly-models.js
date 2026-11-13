@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 import { HORSES } from './characters.js?v=12';
+import {riverMeander,riverHeightAt,terrainHeightAt} from './environment-profile.js?v=14';
 
 export const RAINBOW=[0xf28b95,0xf3ac6d,0xf4d77d,0x8fc8ab,0x7ab6d2,0xb39cce];
 const up=new THREE.Vector3(0,1,0);
@@ -22,6 +23,7 @@ export class LowPolyAssets{
     const leaf=new THREE.BufferGeometry();
     leaf.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0, -.42,-.10,.7, 0,.10,1.3, 0,0,0, 0,.10,1.3, .42,-.1,.7, -.42,-.1,.7, 0,-.28,2.2, 0,.10,1.3, .42,-.1,.7, 0,.10,1.3, 0,-.28,2.2],3));
     leaf.computeVertexNormals();this.geometries.leaf=leaf;
+    leaf.setAttribute('uv',new THREE.Float32BufferAttribute(Array.from(leaf.attributes.position.array).flatMap((value,index,array)=>index%3===0?[value/.84+.5,array[index+2]/2.2]:[]),2));
   }
   mat(color,options={}){
     const key=JSON.stringify([color,options]);
@@ -161,6 +163,7 @@ export class LowPolyAssets{
     this.shadow(root,.6);root.userData={kind:'dragon',wings};return root;
   }
   dinosaur(species='small'){
+    if(species==='stegosaurus')return this.stegosaurus();
     const root=new THREE.Group();root.name=species;
     const color=species==='triceratops'?0x9eb9a1:species==='diplodocus'?0xd5ae80:species==='tyrannosaurus'?0x7fa58c:0xb2c792;
     const legs=[];
@@ -222,16 +225,72 @@ export class LowPolyAssets{
   }
   pterodactyl(){
     const root=new THREE.Group();root.name='pterodactyl';
-    this.mesh(root,'round',0xc39786,0,0,0,.17,.20,.35);
-    this.mesh(root,'round',0xc39786,0,.2,.31,.15,.15,.20);
-    const beak=this.mesh(root,'cone',0xe3bd70,0,.18,.62,.12,.50,.10);beak.rotation.x=Math.PI/2;
-    const crest=this.mesh(root,'cone',0xb48073,0,.27,.14,.10,.30,.10);crest.rotation.x=-.6;
-    this.eyes(root,.10,.25,.46,.028);
+    this.mesh(root,'round',0xb28c78,0,0,-.05,.17,.20,.48);
+    this.segment(root,[0,.06,.19],[0,.40,.48],.10,0xc2997e,'taper');
+    this.mesh(root,'round',0xc2997e,0,.43,.58,.16,.16,.28);
+    const beak=this.mesh(root,'cone',0xe6c08d,0,.42,1.06,.12,.92,.095);beak.rotation.x=Math.PI/2;beak.name='long-beak';
+    this.segment(root,[0,.34,.64],[0,.32,1.42],.042,0xaa7a5e,'taper');
+    const crest=this.mesh(root,'cone',0xa2786d,0,.66,.37,.16,.72,.05);crest.rotation.x=-.78;crest.name='bony-crest';
+    this.eyes(root,.115,.49,.76,.034);
+    for(const side of [-1,1]){
+      this.segment(root,[side*.11,-.06,-.23],[side*.18,-.32,-.43],.032,0x9a7862);
+      for(let i=0;i<3;i++)this.segment(root,[side*.18,-.32,-.43],[side*(.13+i*.05),-.38,-.25],.018,0xf4ddbb);
+    }
+    const tail=this.mesh(root,'cone',0xb28c78,0,-.03,-.68,.045,.50,.04);tail.rotation.x=-Math.PI/2;
+    if(!this.geometries.pterosaurWing){
+      const shape=new THREE.Shape();shape.moveTo(0,0);shape.lineTo(.60,.26);shape.lineTo(2.3,-.02);shape.lineTo(1.70,-.44);shape.lineTo(1.03,-.69);shape.lineTo(.55,-.48);shape.lineTo(0,-.24);shape.closePath();
+      const geometry=new THREE.ShapeGeometry(shape);geometry.rotateX(Math.PI/2);this.geometries.pterosaurWing=geometry;
+    }
     const wings=[];for(const side of [-1,1]){
       const pivot=new THREE.Group();pivot.position.x=side*.10;root.add(pivot);
-      this.mesh(pivot,'wing',this.mat(0xd7b29a,{side:THREE.DoubleSide}),0,0,0,side,1,1);wings.push(pivot);
+      this.mesh(pivot,'pterosaurWing',this.mat(0xcda88d,{side:THREE.DoubleSide}),0,0,0,side,1,1).name='wing-membrane';
+      this.segment(pivot,[0,0,0],[side*.60,.04,.26],.032,0x8d6b5a);
+      this.segment(pivot,[side*.60,.04,.26],[side*2.3,0,-.02],.022,0x8d6b5a);
+      this.segment(pivot,[side*.60,.04,.26],[side*1.03,-.02,-.69],.014,0x9e7c66);
+      wings.push(pivot);
     }
-    root.userData={kind:'pterodactyl',wings};return root;
+    root.scale.setScalar(.78);root.userData={kind:'pterodactyl',wings};return root;
+  }
+  stegosaurus(){
+    const root=new THREE.Group();root.name='stegosaurus';const color=0xa3b987,legs=[];
+    this.mesh(root,'round',color,0,.65,0,.46,.44,.80);
+    this.segment(root,[0,.65,.58],[0,.49,.97],.13,color,'taper');
+    this.mesh(root,'round',color,0,.47,1.10,.16,.16,.28);this.eyes(root,.105,.52,1.31,.033);
+    for(const x of [-.28,.28])for(const z of [-.43,.40])legs.push(this.leg(root,x,.43,z,color,0x81936c,.35));
+    if(!this.geometries.stegoPlate){const shape=new THREE.Shape();shape.moveTo(-.12,0);shape.lineTo(-.22,.24);shape.lineTo(0,.52);shape.lineTo(.22,.24);shape.lineTo(.12,0);shape.closePath();const geo=new THREE.ExtrudeGeometry(shape,{depth:.065,bevelEnabled:false});geo.translate(0,0,-.0325);this.geometries.stegoPlate=geo;}
+    for(let i=0;i<9;i++){const t=i/8,z=-.65+t*1.27,size=.55+Math.sin(t*Math.PI)*.65;const plate=this.mesh(root,'stegoPlate',i%2?0xcba680:0xb99076,(i%2?-.10:.10),.85+Math.sin(t*Math.PI)*.19,z,size,size,size);plate.rotation.y=Math.PI/2;plate.name='back-plate';}
+    this.segment(root,[0,.60,-.65],[0,.42,-1.25],.13,color,'taper');this.segment(root,[0,.42,-1.2],[0,.36,-1.9],.06,color,'taper');
+    for(const side of [-1,1])for(const z of [-1.4,-1.7]){const spike=this.mesh(root,'cone',0xf1dfb5,side*.12,.43,z,.04,.35,.04);spike.rotation.z=-side*1.1;spike.name='tail-spike';}
+    this.shadow(root,.65);root.userData={kind:'stegosaurus',legs};return root;
+  }
+  giganotosaurus(){
+    const root=new THREE.Group();root.name='giganotosaurus';const color=0x6e8e78;
+    this.mesh(root,'round',color,0,1.55,-.12,.70,.84,1.18);
+    this.segment(root,[0,1.75,.65],[0,2.32,1.06],.34,color,'taper');
+    const head=new THREE.Group();head.position.set(0,2.55,1.13);root.add(head);
+    this.mesh(head,'round',color,0,.10,.42,.40,.34,.83);
+    this.mesh(head,'round',0x7e9a82,0,.03,1.0,.32,.22,.44);
+    this.mesh(head,'box',0x61483e,0,-.12,.60,.59,.06,1.34);
+    for(const side of [-1,1]){
+      this.mesh(head,'eye',0xe9d5a1,side*.35,.24,.41,.045,.08,.095);
+      this.mesh(head,'eye',0x263b31,side*.387,.25,.44,.022,.05,.05);
+      this.mesh(head,'rock',0x5c7a65,side*.30,.38,.42,.19,.085,.24);
+      this.mesh(head,'rock',0x455d4e,side*.18,.10,1.38,.05,.035,.025);
+      for(let i=0;i<7;i++){const tooth=this.mesh(head,'cone',0xf4e8cd,side*.26,-.19,.2+i*.16,.045,.15,.035);tooth.rotation.z=Math.PI;}
+    }
+    const jaw=new THREE.Group();jaw.position.set(0,-.13,-.03);head.add(jaw);jaw.name='hinged-jaw';
+    this.mesh(jaw,'round',color,0,-.14,.65,.34,.13,.82);
+    this.mesh(jaw,'round',0x9c6e66,0,-.025,.65,.26,.035,.65);
+    for(const side of [-1,1])for(let i=0;i<6;i++)this.mesh(jaw,'cone',0xf4e8cd,side*.24,.015,.25+i*.17,.032,.12,.028);
+    const legs=[];
+    for(const side of [-1,1]){
+      const leg=new THREE.Group();leg.position.set(side*.47,1.18,-.12);root.add(leg);
+      this.mesh(leg,'round',color,0,-.22,0,.31,.48,.37);this.segment(leg,[0,-.45,.04],[0,-1.01,.29],.15,color,'taper');this.mesh(leg,'round',0x597461,0,-1.07,.45,.28,.13,.49);legs.push(leg);
+      this.segment(root,[side*.53,1.9,.68],[side*.66,1.49,1.00],.095,color);
+    }
+    this.segment(root,[0,1.55,-.85],[0,1.1,-2.2],.42,color,'taper');this.segment(root,[0,1.1,-2.1],[0,.81,-3.6],.22,color,'taper');this.segment(root,[0,.81,-3.5],[0,.65,-4.5],.075,color,'taper');
+    for(let i=0;i<7;i++)this.mesh(root,'rock',0x587761,0,2.18-i*.15,-.25-i*.25,.12,.12,.17);
+    this.shadow(root,2.1);root.userData={kind:'giganotosaurus',head,jaw,legs};return root;
   }
   creature(type,weapon,episode){
     if(episode==='dino')return this.dinosaur(type==='boss'?'tyrannosaurus':type==='dragon'?'diplodocus':'triceratops');
@@ -244,18 +303,18 @@ export class LowPolyAssets{
       this.segment(root,[.25,height*.55,0],[0,height,0],.19,0xa08061,'taper');
       for(let i=0;i<7;i++){
         const frond=new THREE.Group();frond.position.y=height;frond.rotation.y=i*Math.PI*2/7;root.add(frond);
-        const leaf=this.mesh(frond,'leaf',this.mat(i%2?0x629d7c:0x468469,{side:THREE.DoubleSide}),0,0,0,1.1,1,1.3);leaf.rotation.x=-.12;
+        const leaf=this.mesh(frond,'leaf',this.mat(i%2?0x629d7c:0x468469,{side:THREE.DoubleSide,name:'foliage'}),0,0,0,1.3,1,1.3);leaf.rotation.x=-.12;
       }
       for(let i=0;i<3;i++)this.mesh(root,'rock',0xbfa17b,Math.sin(i*2.1)*.25,height-.25,Math.cos(i*2.1)*.25,.19);
     }else{
       this.mesh(root,'taper',0x9c8267,0,height*.30,0,.24,height*.60,.24);
       const shades=seed%3===0?[0xd9ba78,0xe2ca91]:[0x82b196,0x5d947d];
       if(seed%4===0){
-        for(let i=0;i<3;i++)this.mesh(root,'cone',shades[i%2],0,height*.57+i*height*.16,0,2-i*.43,height*.48,2-i*.43);
+        for(let i=0;i<3;i++)this.mesh(root,'cone',this.mat(shades[i%2],{name:'foliage'}),0,height*.57+i*height*.16,0,2-i*.43,height*.48,2-i*.43);
       }else{
-        this.mesh(root,'round',shades[0],0,height*.75,0,2.0,height*.35,1.8);
-        this.mesh(root,'round',shades[1],-1.0,height*.68,.20,1.35,height*.23,1.4);
-        this.mesh(root,'round',shades[0],.9,height*.88,-.15,1.4,height*.25,1.3);
+        this.mesh(root,'round',this.mat(shades[0],{name:'foliage'}),0,height*.75,0,2.0,height*.35,1.8);
+        this.mesh(root,'round',this.mat(shades[1],{name:'foliage'}),-1.0,height*.68,.20,1.35,height*.23,1.4);
+        this.mesh(root,'round',this.mat(shades[0],{name:'foliage'}),.9,height*.88,-.15,1.4,height*.25,1.3);
       }
     }
     return root;
@@ -285,10 +344,10 @@ export class LowPolyAssets{
   forestChunk(index,episode='forest'){
     const root=new THREE.Group(),random=seeded(index*291+87),jungle=episode==='dino';
     for(const side of [-1,1]){
-      for(let i=0;i<5;i++){
+      for(let i=0;i<9;i++){
         const tree=this.tree(index*13+i,jungle);tree.position.set(side*(4.0+random()*13),0,-random()*16);tree.rotation.y=random()*6.28;root.add(tree);
       }
-      for(let i=0;i<18;i++){
+      for(let i=0;i<30;i++){
         const x=side*(2.65+random()*9),z=-random()*16;
         if(jungle&&i%3===0){const fern=this.fern();fern.position.set(x,0,z);fern.scale.setScalar(.6+random()*.6);root.add(fern);}
         else if(i%3===0)this.mesh(root,'rock',0x8d9d91,x,.10,z,.2+random()*.3,.15,.26);
@@ -305,6 +364,23 @@ export class LowPolyAssets{
     }
     return this.batch(root);
   }
+  deepForest(episode='forest',lavaRows=[]){
+    const root=new THREE.Group(),random=seeded(431),jungle=episode==='dino';let count=0;
+    const colors=jungle?[0x4c795e,0x5a8769,0x6c9674]:[0x63866a,0x739577,0x8aa17a];
+    for(let z=-15;z>-640;z-=14)for(const side of [-1,1]){
+      const xs=Array.from({length:13},(_,i)=>19+i*6.7+random()*3);
+      if(z< -135)xs.push(5.6+random(),10+random()*2,14+random()*2);
+      if(z< -440)xs.push(1.8+random()*2);
+      for(const baseX of xs){const x=side*baseX,worldZ=z+random()*7;
+        if(lavaRows.some(row=>Math.abs(worldZ+row-riverMeander(x))<1.6))continue;
+        const height=6+random()*4,ground=terrainHeightAt(x,worldZ);this.mesh(root,'taper',0x8b7e64,x,ground+height*.36,worldZ,.22,height*.72,.22);
+        this.mesh(root,'rock',this.mat(colors[count%3],{name:'foliage'}),x,ground+height*.79,worldZ,2.1+random(),height*.30,2+random());
+        if(count%2===0)this.mesh(root,'rock',this.mat(colors[(count+1)%3],{name:'foliage'}),x+1.2,ground+height*.65,worldZ+.6,1.6,height*.23,1.6);
+        count++;
+      }
+    }
+    const result=this.batch(root);result.children.forEach(mesh=>{mesh.castShadow=false;mesh.receiveShadow=false;});result.userData.treeCount=count;return result;
+  }
   fence(){
     const root=new THREE.Group();
     for(const side of [-1,1]){
@@ -314,18 +390,26 @@ export class LowPolyAssets{
     for(const y of [.26,.64])this.mesh(root,'box',0xc7a177,0,y,0,4.34,.17,.13);
     this.mesh(root,'rock',0xe6a6b7,.68,.84,.0,.10);return root;
   }
-  obstacle(kind){
+  obstacle(kind,row=0){
     if(kind!=='lava'){
       const root=new THREE.Group();const trunk=this.mesh(root,'cylinder',0x947155,0,.30,0,.30,4.35,.30);trunk.rotation.z=Math.PI/2;
       for(const side of [-1,1]){const end=this.mesh(root,'cylinder',0xd7b487,side*2.19,.30,0,.26,.025,.26);end.rotation.z=Math.PI/2;
         const ring=this.mesh(root,'cylinder',0xb98c63,side*2.21,.30,0,.16,.03,.16);ring.rotation.z=Math.PI/2;}
       this.segment(root,[.45,.4,0],[.68,.75,.1],.075,0x947155);return root;
     }
-    const root=new THREE.Group();
-    const lava=this.mesh(root,'box',this.mat(0xf2a553,{emissive:0xec762b,emissiveIntensity:.55}),0,.015,0,4.2,.035,1.05);lava.receiveShadow=false;
-    for(let i=0;i<9;i++)this.mesh(root,'rock',this.mat(0xf8d485,{emissive:0xf8bf50,emissiveIntensity:.5}),-1.9+i*.47,.035,Math.sin(i)*.2,.18,.025,.09);
-    for(const z of [-.60,.60])this.mesh(root,'box',0x7f8377,0,.025,z,4.3,.12,.12);
-    root.userData.lava=lava;return root;
+    const root=new THREE.Group();root.name='lava-river';const steps=96;
+    const ribbon=(bank=0)=>{
+      const positions=[],uv=[],indices=[];
+      for(let i=0;i<=steps;i++){const x=-90+180*i/steps,z=riverMeander(x),y=riverHeightAt(x,-row+z);
+        for(const side of [-1,1]){const offset=bank?bank*(side<0?.56:.82):side*.525;positions.push(x,y+(bank?.08:0),z+offset);uv.push(x/4,(side+1)/2);}
+        if(i<steps){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}
+      }
+      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();this.geometries['river-'+row+'-'+bank]=geo;return geo;
+    };
+    const lava=new THREE.Mesh(ribbon(),this.mat(0xffffff,{name:'lava-flow',side:THREE.DoubleSide,emissive:0xef8d35,emissiveIntensity:.7}));lava.castShadow=false;lava.receiveShadow=false;root.add(lava);
+    for(const side of [-1,1]){const bank=new THREE.Mesh(ribbon(side),this.mat(0x75836a,{side:THREE.DoubleSide}));bank.receiveShadow=true;root.add(bank);}
+    const streaks=[];for(let i=0;i<16;i++){const streak=this.mesh(root,'rock',this.mat(0xffd18b,{emissive:0xf4b34c,emissiveIntensity:.7}),0,0,0,.34,.025,.09);streak.castShadow=false;streak.receiveShadow=false;streak.userData.seedX=-88+i*11.2;streaks.push(streak);}
+    root.userData={lava,streaks,row};return root;
   }
   amber(){
     const root=new THREE.Group();this.mesh(root,'rock',this.mat(0xf3bc65,{metalness:.12,roughness:.35,emissive:0xe7a238,emissiveIntensity:.18}),0,0,0,.26,.36,.23);

@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {Adventure} from '../dist/rules.js';
+import {GIANT,giantPose} from '../dist/giant-encounter.js';
+const events=[],game=new Adventure(event=>events.push(event));
+assert.equal(game.giant,null,'giant belongs to the dinosaur episode');game.selectEpisode('dino');game.start();
+game.objects.forEach(object=>object.done=true);[...game.herds,...game.witches].forEach(herd=>herd.cleared=true);game.bonus.finished=true;
+const tick=(seconds,input={forward:true,steer:0})=>{for(let i=0;i<Math.round(seconds*120);i++)game.update(1/120,input);};
+game.distance=GIANT.z-GIANT.trigger-.01;tick(3.0);
+assert.equal(game.distance,GIANT.z-GIANT.stopDistance);assert(game.waitingForHerd);assert.equal(game.giant.phase,'approach');
+tick(3);assert.equal(game.giant.phase,'roar');assert.equal(game.giant.x,0);assert(game.giant.jaw>.6);assert.equal(events.filter(e=>e.type==='giantRoar').length,1);
+game.jump();game.shoot();assert.equal(events.filter(e=>e.type==='shot').at(-1).target,null,'the crossing giant is immune to magic');assert(!game.giant.done);
+game.pause();const held=JSON.stringify(game.giant);tick(4);assert.equal(JSON.stringify(game.giant),held,'pause freezes position, jaw and event clock');game.resume();
+tick(9);assert(game.giant.done);assert(game.distance>GIANT.z-GIANT.stopDistance);assert.equal(events.filter(e=>e.type==='giantStart').length,1);assert.equal(events.filter(e=>e.type==='giantRoar').length,1);assert.equal(events.filter(e=>e.type==='giantEnd').length,1);assert(events.filter(e=>e.type==='giantStep').length>10);
+tick(5);assert.equal(events.filter(e=>e.type==='giantStart').length,1,'encounter does not repeat');
+assert.equal(giantPose(GIANT.approach).x,0);assert.equal(giantPose(GIANT.depart).x,0);assert.equal(giantPose(GIANT.duration).visible,false);
+game.start();assert.equal(game.giant.elapsed,-1);assert(!game.giant.roared);assert(!game.giant.done,'replay restores the single crossing');
+console.log('PASS: single giant crossing, central stop, opening jaw and one roar, footstep events, enforced waiting, pause, immunity and replay');

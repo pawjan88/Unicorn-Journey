@@ -1,5 +1,6 @@
 import { HORSES } from './characters.js?v=12';
 import { EPISODES } from './episodes.js?v=12';
+import { GIANT,giantPose } from './giant-encounter.js?v=14';
 export const RULES = Object.freeze({
   length:396, speed:4, halfWidth:2.1, riderRadius:.35, steerSpeed:2.45,
   jumpDuration:1.1, jumpHeight:1.2, fenceClearance:.54,
@@ -38,7 +39,7 @@ export class Adventure {
     this.objects.push(this.boss);this.objects.sort((a,b)=>a.z-b.z);
     if(this.episodeId==='dino'){
       // Mechanical roles stay shared; the episode supplies dinosaur species and scenery.
-      this.herds.forEach(h=>{h.type='dinosaur';});
+      this.herds.forEach(h=>{h.type='dinosaur';h.species='stegosaurus';});
       this.witches.forEach(h=>{h.type='pterodactyl';});
       let obstacleIndex=0;
       for(const object of this.objects){
@@ -49,6 +50,7 @@ export class Adventure {
       this.boss.species='tyrannosaurus';
     }
     this.rocks=[];this.rockId=0;this.bossRollClock=0;
+    this.giant=this.episodeId==='dino'?{type:'giganotosaurus',z:GIANT.z,elapsed:-1,done:false,roared:false,lastStep:-1,...giantPose(-1)}:null;
   }
   selectEpisode(id) {
     if(!EPISODES[id]||!['intro','finished'].includes(this.mode))return false;
@@ -129,6 +131,17 @@ export class Adventure {
     }
     this.rocks=this.rocks.filter(r=>r.active).slice(-8);return next;
   }
+  updateGiant(dt,previous,next){
+    const giant=this.giant;if(!giant||giant.done)return next;
+    if(previous>giant.z+2){giant.done=true;Object.assign(giant,giantPose(GIANT.duration));return next;}
+    if(giant.elapsed<0){if(next<giant.z-GIANT.trigger)return next;giant.elapsed=0;this.onEvent({type:'giantStart'});}
+    giant.elapsed=Math.min(GIANT.duration,giant.elapsed+dt);Object.assign(giant,giantPose(giant.elapsed));
+    if(giant.walking&&giant.step!==giant.lastStep){giant.lastStep=giant.step;this.onEvent({type:'giantStep',x:giant.x});}
+    if(!giant.roared&&giant.elapsed>=GIANT.roarAt){giant.roared=true;this.onEvent({type:'giantRoar'});}
+    if(giant.elapsed>=GIANT.duration){giant.done=true;this.onEvent({type:'giantEnd'});return next;}
+    if(next>=giant.z-GIANT.stopDistance){this.waitingForHerd=true;this.waitingCrossing=giant;return Math.min(next,giant.z-GIANT.stopDistance);}
+    return next;
+  }
   update(dt,input){
     if(this.mode!=='playing')return;
     if(!this.boss.done&&this.distance>=RULES.bossWakeDistance&&!this.boss.active){this.boss.active=true;this.onEvent({type:'bossWake'});}
@@ -145,6 +158,7 @@ export class Adventure {
     let next=input.forward&&!this.stun?Math.min(RULES.length,previous+RULES.speed*dt):previous;
     this.waitingForHerd=false;this.waitingCrossing=null;this.fenceBlocked=false;
     next=this.updateCrossings(dt,next,previous);
+    next=this.updateGiant(dt,previous,next);
     if(!this.bonus.finished&&previous<RULES.bonusStart&&next>=RULES.bonusStart){
       this.distance=RULES.bonusStart;this.bonus.active=true;this.jumpHeight=0;this.jumpTime=-1;this.onEvent({type:'bonusStart'});this.updateBonus(0);return;
     }

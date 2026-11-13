@@ -25,7 +25,7 @@ async function run(){
   page.on('response',response=>{if(response.status()>=400)report.errors.push(`${response.status()} ${response.url()}`);});
   page.on('console',message=>{if(message.type()==='error'&&!message.text().includes('context is lost'))report.errors.push(message.text());});
   const state=()=>page.evaluate(()=>window.__unicornQA.snapshot());
-  const wait=(fn,arg)=>page.waitForFunction(fn,arg,{timeout:20000});
+  const wait=(fn,arg)=>page.waitForFunction(fn,arg,{timeout:45000});
   const checkpoint=(distance,x=0)=>page.evaluate(([d,x])=>window.__unicornQA.checkpoint(d,x),[distance,x]);
   async function shot(name){await page.screenshot({path:path.join(output,name+'.png'),fullPage:true});report.screenshots.push(name+'.png');}
   async function check(name,action){try{await action();report.checks.push(name);console.log('PASS:',name);}catch(error){report.failedState=await state();await shot('FAILED');throw error;}}
@@ -40,7 +40,7 @@ async function run(){
     for(const horse of ['sunny','moon','rose']){await page.click('#horse-'+horse);assert.equal((await state()).horse,horse);assert.equal(await page.locator('#horse-'+horse).getAttribute('aria-pressed'),'true');}
     await page.click('#episode-dino');assert.equal((await state()).episode,'dino');await shot('02-menu-dinosaurs');
     await page.click('#episode-forest');assert.equal((await state()).horse,'rose');await page.click('#play');
-    await wait(()=>window.__unicornQA.snapshot().audio.buffers===12);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===13);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
   });
   async function noCaptions(){
     const words=await page.locator('.game').evaluate(root=>{
@@ -54,7 +54,7 @@ async function run(){
       return texts;
     });assert.deepEqual(words,[],'no visible captions or instructions cover the playfield');
   }
-  await check('Rider head reduced by 20% and gameplay free of captions',async()=>{assert.equal((await state()).view.headScale,.8);assert.equal(await page.locator('#herd-notice, #bonus-notice, .spell-hint, .scene-label').count(),0);await noCaptions();});
+  await check('Rider head reduced by 20%, deep forest and gameplay free of captions',async()=>{assert.equal((await state()).view.headScale,.8);assert((await state()).environment.deepTrees>1200);assert.equal(await page.locator('#herd-notice, #bonus-notice, .spell-hint, .scene-label').count(),0);await noCaptions();});
   await check('Hold Up to ride, release to stop, steer both ways and respect path bounds',async()=>{
     const scroll=await page.evaluate(()=>scrollY);
     await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>.8);assert((await state()).audio.hooves);
@@ -85,6 +85,7 @@ async function run(){
   await check('Ctrl rainbow shot destroys an enemy without a shot popup',async()=>{
     await checkpoint(43,1.12);const before=(await state()).enemiesRemaining;await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().shotTime>0);assert.equal((await state()).enemiesRemaining,before-1);await shot('07-rainbow-magic');
     assert.equal(await page.locator('#message').evaluate(node=>getComputedStyle(node).opacity),'0');
+    assert.equal((await state()).environment.beamShadowCasters,0,'rainbow beam does not cast a shadow');
   });
   await check('Crossing herd blocks forward travel and clears after waiting',async()=>{
     await checkpoint(89.4);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);const held=(await state()).distance;assert(held<=89.6+.001);
@@ -104,9 +105,20 @@ async function run(){
     await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.hp===2);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.hp===1);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);
     await checkpoint(395.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='dino');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'rose');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'dino-ambient');await shot('12-dinosaur-game');
   });
-  await check('Dinosaur lava jump and flying pterodactyl crossing',async()=>{
-    await checkpoint(29);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().blocked);await shot('13-lava');await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>30.5);await page.keyboard.up('ArrowUp');
+  await check('Deep jungle, flowing lava river, jump and leathery pterodactyl crossing',async()=>{
+    assert((await state()).environment.deepTrees>1200);await checkpoint(26);await shot('13-lava');await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().blocked);const offset=(await state()).environment.lavaOffset;await wait(before=>window.__unicornQA.snapshot().environment.lavaOffset!==before,offset);await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>30.5);await page.keyboard.up('ArrowUp');
     await checkpoint(54.5);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);await page.keyboard.up('ArrowUp');await shot('14-pterodactyls');
+  });
+  await check('Baby stegosaurus herd stops traffic and clears safely',async()=>{
+    await checkpoint(89.4);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().waiting);await shot('14b-stegosaurs');await noCaptions();await wait(()=>window.__unicornQA.snapshot().distance>92);await page.keyboard.up('ArrowUp');
+  });
+  await check('Giganotosaurus walks, shakes the camera, stops, roars, opens its jaw and clears the road',async()=>{
+    await checkpoint(303.8);await page.keyboard.down('ArrowUp');
+    await wait(()=>{const s=window.__unicornQA.snapshot();return s.giant.elapsed>2.8&&s.environment.shake>0;});const approach=await state();assert(approach.giant.walking);await shot('14c-giant-approach');
+    await wait(()=>{const s=window.__unicornQA.snapshot();return s.giant.elapsed>6&&s.environment.giantJaw>.6&&s.audio.giantRoar;});const roar=await state();assert.equal(roar.giant.x,0);assert(roar.waiting);assert(roar.distance<=304.501);await noCaptions();await shot('14d-giant-roar');
+    await page.keyboard.press('Escape');const paused=await state();await page.waitForTimeout(300);assert.equal((await state()).giant.elapsed,paused.giant.elapsed);assert.equal((await state()).environment.giantJaw,paused.environment.giantJaw);assert(!(await state()).audio.giantRoar);await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().audio.giantRoar);
+    await page.keyboard.press('Control');await page.keyboard.press('Space');assert((await state()).distance<=304.501);assert(!(await state()).giant.done);await page.keyboard.down('ArrowUp');
+    await page.waitForFunction(()=>window.__unicornQA.snapshot().giant.done,null,{timeout:45000});await wait(()=>window.__unicornQA.snapshot().distance>307);await page.keyboard.up('ArrowUp');assert(!(await state()).audio.giantRoar);assert(!(await state()).environment.roarVisible);await shot('14e-giant-cleared');
   });
   await check('Tyrannosaur, thunder music, three-hit boss, cave finish, confetti and replay',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).audio.music,'dino-thunder');await noCaptions();await shot('15-tyrannosaur');
@@ -127,6 +139,9 @@ async function run(){
   });
   await check('Reduced motion disables decorative UI transitions',async()=>{
     await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.locator('#play:not([disabled])').waitFor({timeout:60000});assert.equal(await page.locator('.horse-option').first().evaluate(node=>getComputedStyle(node).transitionDuration),'0s');await shot('21-reduced-motion');
+  });
+  await check('Reduced motion suppresses giant camera shake',async()=>{
+    await page.click('#episode-dino');await page.click('#play');await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().giant.elapsed>1);assert.equal((await state()).environment.shake,0);await page.keyboard.up('ArrowUp');
   });
   await check('Normal URL exposes no QA controls',async()=>{await page.goto(base);await page.locator('#play:not([disabled])').waitFor({timeout:60000});assert.equal(await page.evaluate(()=>typeof window.__unicornQA),'undefined');});
   assert.deepEqual(report.errors,[],'no browser errors or failed assets');

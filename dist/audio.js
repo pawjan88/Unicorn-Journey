@@ -1,3 +1,4 @@
+import {GIANT} from './giant-encounter.js?v=14';
 // Local audio: supplied horse recordings, original music, and game effects.
 const FILES = {
   'forest-music': 'forest-music.mp3',
@@ -12,6 +13,7 @@ const FILES = {
   'dino-thunder': 'grzmoty.mp3',
   'dino-call': 'dino-call.mp3',
   'ptero-call': 'ptero-call.mp3',
+  'giant-roar':'giant-roar.mp3',
 };
 export class AdventureAudio {
   constructor() {
@@ -28,6 +30,7 @@ export class AdventureAudio {
     this.neigh = null;
     this.witchLaugh = null;
     this.dinoCrossing = null;
+    this.giantRoar=null;this.giantRoarGain=null;this.giantRoarFinished=false;
     this.musicVolume=.25;this.effectsVolume=.85;this.duckUntil=0;
     // Fetching files does not start audio or create an AudioContext.
     this.files = Promise.all(Object.entries(FILES).map(async ([name, file]) => {
@@ -110,6 +113,7 @@ export class AdventureAudio {
     this.stopHooves();
     this.stopWitches();
     this.stopDinoCrossing();
+    this.stopGiant();
     for (const node of this.effects) { try { node.stop(); } catch {} node.disconnect(); }
     this.effects.clear();
   }
@@ -177,9 +181,22 @@ export class AdventureAudio {
     this.dinoCrossing=source;source.start(0,crossing.elapsed%buffer.duration);
   }
   stopDinoCrossing(){if(!this.dinoCrossing)return;const source=this.dinoCrossing;this.dinoCrossing=null;try{source.stop();}catch{}source.disconnect();}
-  update(dt, moving, grounded, witchCrossing=null) {
-    if(this.musicGain)this.musicGain.gain.setTargetAtTime(this.musicVolume*(this.musicTrack==='dino-thunder'?.85:1)*(this.context.currentTime<this.duckUntil?.65:1),this.context.currentTime,.12);
+  updateGiant(giant){
+    if(!giant||giant.done||giant.elapsed<GIANT.roarAt||giant.elapsed>=GIANT.roarEnd||!this.playing||!this.enabled||!this.context||this.context.state!=='running'){this.stopGiant();return;}
+    if(this.giantRoar||this.giantRoarFinished)return;
+    const buffer=this.buffers.get('giant-roar'),offset=giant.elapsed-GIANT.roarAt;
+    if(!buffer)return;if(offset>=buffer.duration){this.giantRoarFinished=true;return;}
+    const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;gain.gain.value=.62;
+    source.connect(gain).connect(this.effectsGain);this.giantRoar=source;this.giantRoarGain=gain;
+    source.onended=()=>{if(this.giantRoar===source){this.giantRoar=null;this.giantRoarGain=null;this.giantRoarFinished=true;}source.disconnect();gain.disconnect();};
+    source.start(0,offset);
+  }
+  stopGiant(){if(this.giantRoar){this.giantRoar.onended=null;try{this.giantRoar.stop();}catch{}this.giantRoar.disconnect();this.giantRoarGain?.disconnect();this.giantRoar=null;this.giantRoarGain=null;}this.giantRoarFinished=false;}
+  update(dt, moving, grounded, witchCrossing=null,giant=null) {
+    const roaring=giant&&!giant.done&&giant.elapsed>=GIANT.roarAt&&giant.elapsed<GIANT.roarEnd;
+    if(this.musicGain)this.musicGain.gain.setTargetAtTime(this.musicVolume*(this.musicTrack==='dino-thunder'?.85:1)*(roaring?.4:this.context.currentTime<this.duckUntil?.65:1),this.context.currentTime,.12);
     this.updateWitches(witchCrossing);this.updateDinoCrossing(witchCrossing);
+    this.updateGiant(giant);
     if (!this.playing || !this.enabled || !moving || !grounded) { this.stopHooves(); return; }
     this.startHooves();
   }

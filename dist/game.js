@@ -1,5 +1,5 @@
-import { Adventure, RULES } from './rules.js?v=12';
-import { AdventureAudio } from './audio.js?v=11';
+import { Adventure, RULES } from './rules.js?v=14';
+import { AdventureAudio } from './audio.js?v=14';
 import { EPISODES } from './episodes.js?v=12';
 import { HORSES } from './characters.js?v=12';
 import { Celebration } from './celebration.js?v=12';
@@ -76,7 +76,8 @@ function handleEvent(event) {
     sound.effect('neigh', .44);
   } else if (event.type === 'herdStart') {
     if(event.herd.type==='unicorn')sound.effect('neigh',.18,.94);
-
+  } else if(event.type==='giantStep'){
+    forest?.giantStep?.(event.x);sound.effect('bump',.25+.12*Math.max(0,1-Math.abs(event.x)/20),.46);
   } else if (event.type === 'episodeSelect') {
     if(!$('#episode-picker')){overlay.innerHTML=startTemplate;overlay.hidden=false;}
     rebuildForest();applyEpisodeUI();bindStart();updateHud();
@@ -197,14 +198,14 @@ function frame(timestamp) {
   }
   updateHud();
   sound.setMusicState(game.episodeId,game.boss.active&&!game.boss.done);
-  sound.update(dt, game.moving, game.jumpTime < 0 && !game.bonus.active, [...game.herds,...game.witches].find(w=>w.elapsed>=0&&!w.cleared)||null);
+  sound.update(dt, game.moving, game.jumpTime < 0 && !game.bonus.active, [...game.herds,...game.witches].find(w=>w.elapsed>=0&&!w.cleared)||null,game.giant);
   const visualDt=game.mode==='paused'?0:dt;
   sceneTime+=visualDt;
   if(!contextUnavailable)forest.update(game, sceneTime, visualDt);
   confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=13').then(async ({ MagicForest }) => {
+import('./forest.js?v=14').then(async ({ MagicForest }) => {
   await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });
@@ -221,8 +222,8 @@ import('./forest.js?v=13').then(async ({ MagicForest }) => {
 if(typeof location!=='undefined'&&['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).has('qa')){
   let contextExtension,meter;
   Object.defineProperty(window,'__unicornQA',{value:Object.freeze({
-    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,view:forest?.rideView?.(),audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls,triangles:forest?.renderer.info.render.triangles,headAngle:forest?.mount?.userData.head.rotation.y,quality:forest?.resolutionScale}}),
-    checkpoint:(distance,x=0)=>{game.distance=distance;game.x=x;game.stun=0;game.jumpTime=-1;game.jumpHeight=0;game.objects.forEach(o=>{if(o.type!=='boss')o.done=o.z<distance-2;});[...game.herds,...game.witches].forEach(h=>{h.elapsed=-1;h.cleared=h.z<distance-12;});game.bonus.active=false;game.bonus.finished=distance>RULES.bonusEnd;game.bonus.elapsed=0;game.flightHeight=0;game.rocks=[];accumulator=0;forest?.resetEffects();},
+    snapshot:()=>({mode:game.mode,episode:game.episodeId,horse:game.horseId,distance:game.distance,x:game.x,jumpTime:game.jumpTime,jumpHeight:game.jumpHeight,headFrame:forest?.headFrame,count:game.count,bonus:game.bonus.active,bonusCount:game.bonusCount,boss:{hp:game.boss.hp,active:game.boss.active,done:game.boss.done},blocked:game.fenceBlocked,waiting:game.waitingForHerd,shotTime:forest?.shotTime,shotCooldown:game.shotCooldown,enemiesRemaining:game.objects.filter(object=>!object.done&&['troll','dragon','boss'].includes(object.type)).length,sceneTime,giant:game.giant?{...game.giant}:null,environment:forest?.environmentView?.(),view:forest?.rideView?.(),audio:{state:sound.context?.state,enabled:sound.enabled,playing:sound.playing,buffers:sound.buffers.size,hooves:!!sound.hooves,music:sound.musicTrack,effects:sound.effects.size,giantRoar:!!sound.giantRoar},render:{width:forest?.renderer.domElement.width,height:forest?.renderer.domElement.height,calls:forest?.renderer.info.render.calls,triangles:forest?.renderer.info.render.triangles,headAngle:forest?.mount?.userData.head.rotation.y,quality:forest?.resolutionScale}}),
+    checkpoint:(distance,x=0)=>{game.distance=distance;game.x=x;game.stun=0;game.jumpTime=-1;game.jumpHeight=0;game.objects.forEach(o=>{if(o.type!=='boss')o.done=o.z<distance-2;});[...game.herds,...game.witches].forEach(h=>{h.elapsed=-1;h.cleared=h.z<distance-12;});game.bonus.active=false;game.bonus.finished=distance>RULES.bonusEnd;game.bonus.elapsed=0;game.flightHeight=0;if(game.giant){Object.assign(game.giant,{elapsed:-1,done:distance>game.giant.z+2,roared:false,lastStep:-1,phase:'waiting',visible:false,walking:false});}game.rocks=[];accumulator=0;forest?.resetEffects();},
     loseContext:()=>{contextExtension=forest.renderer.getContext().getExtension('WEBGL_lose_context');contextExtension?.loseContext();},
     restoreContext:()=>contextExtension?.restoreContext(),
     audioLevel:()=>{if(!sound.master)return 0;if(!meter){meter=sound.context.createAnalyser();meter.fftSize=256;sound.master.connect(meter);}const data=new Float32Array(meter.fftSize);meter.getFloatTimeDomainData(data);return Math.sqrt(data.reduce((sum,value)=>sum+value*value,0)/data.length);},

@@ -1,9 +1,11 @@
 import * as THREE from './vendor/three.module.js';
-import { RULES, skyHeightAt } from './rules.js?v=12';
+import { RULES, skyHeightAt } from './rules.js?v=14';
 import { HORSES } from './characters.js?v=12';
 import { jumpHeadPose } from './animation.js?v=12';
-import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=13';
-import { riderCameraPose } from './ride-camera.js?v=13';
+import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=14';
+import { riderCameraPose } from './ride-camera.js?v=14';
+import {GIANT} from './giant-encounter.js?v=14';
+import {terrainHeightAt,riverMeander,riverHeightAt} from './environment-profile.js?v=14';
 
 const up=new THREE.Vector3(0,1,0);
 function skyRoad(assets){
@@ -31,6 +33,18 @@ function glowTexture(){
   gradient.addColorStop(0,'#ffffff');gradient.addColorStop(.18,'#fff0b2');gradient.addColorStop(1,'#ffdd7800');ctx.fillStyle=gradient;ctx.fillRect(0,0,32,32);
   return new THREE.CanvasTexture(canvas);
 }
+function natureTexture(foliage=false){
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+  const ctx=canvas.getContext('2d'),random=seeded(foliage?912:322);ctx.fillStyle=foliage?'#d6dcc5':'#d2dcb9';ctx.fillRect(0,0,128,128);
+  for(let i=0;i<260;i++){const x=random()*128,y=random()*128,size=2+random()*10;ctx.fillStyle=i%2?'#91ab7b':'#f0edcb';ctx.globalAlpha=.08+random()*.15;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+size,y-size*.3);ctx.lineTo(x+size*.7,y+size*.65);ctx.lineTo(x-size*.3,y+size*.4);ctx.fill();}
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(foliage?2:18,foliage?2:70);tex.anisotropy=4;return tex;
+}
+function lavaTexture(){
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const ctx=canvas.getContext('2d'),random=seeded(491);
+  ctx.fillStyle='#e47d30';ctx.fillRect(0,0,256,256);
+  for(let i=0;i<95;i++){const x=random()*256,y=random()*256;ctx.fillStyle=i%3?'#a8532c':'#ffd282';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+16+random()*32,y-3);ctx.lineTo(x+26,y+8+random()*10);ctx.lineTo(x-7,y+5);ctx.fill();}
+  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(1,1);return tex;
+}
 
 export class MagicForest{
   static async prepare(){await document.fonts?.ready;}
@@ -41,7 +55,7 @@ export class MagicForest{
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.12;
     this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.needsUpdate=true;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(this.isDino?0xd4e2cc:0xe0eadb);
-    this.scene.fog=new THREE.FogExp2(this.isDino?0xd4e2cc:0xe0eadb,.0082);
+    this.scene.fog=new THREE.FogExp2(this.isDino?0xd4e2cc:0xe0eadb,this.isDino?.0058:.0054);
     this.camera=new THREE.PerspectiveCamera(64,16/9,.06,700);this.camera.position.set(0,2.05,1.7);this.camera.rotation.x=-.055;this.scene.add(this.camera);
     this.scene.add(new THREE.HemisphereLight(0xfff7e6,0x6c9484,1.8));
     this.sun=new THREE.DirectionalLight(0xffebcf,2.5);this.sun.position.set(-14,27,-20);this.sun.castShadow=true;
@@ -53,28 +67,36 @@ export class MagicForest{
     this.reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
     this.lastDistance=0;this.lastX=0;this.shadowDistance=null;this.shotTime=0;this.bossHitTime=0;this.bossThrowTime=0;this.celebration=0;this.lastJumpHeight=0;this.lastFlightHeight=0;
     this.resolutionScale=1;this.slowFrames=0;this.lastFrameStamp=null;this.lastWrap=null;
+    this.giantQuake=0;this.giantQuakeFresh=false;this.giantLook=0;this.shake=0;this.cameraRoll=0;
+    this.lavaRows=objects.filter(object=>object.obstacle==='lava').map(object=>object.z);
     this.makeGround();this.makeSky();
     const forestSource=new THREE.Group();
     for(let i=0;i<9;i++){const chunk=a.forestChunk(i,this.episodeId);chunk.position.z=12-i*16;forestSource.add(chunk);}
     this.vegetation=a.batch(forestSource);this.scene.add(this.vegetation);
     this.wrapBatches=this.vegetation.children.map(mesh=>{mesh.frustumCulled=false;return {mesh,base:Float32Array.from(mesh.instanceMatrix.array)};});
+    this.deepForest=a.deepForest(this.episodeId,this.lavaRows);this.scene.add(this.deepForest);
+    this.foliageTexture=natureTexture(true);for(const mat of a.materials.values())if(mat.name==='foliage'){mat.map=this.foliageTexture;mat.needsUpdate=true;}
     this.selectHorse(options.horseId||HORSES[0].id);
     this.objectMeshes=objects.map(object=>{
       let mesh;
       if(object.type==='rainbow')mesh=this.isDino?a.amber():a.rainbow();
-      else if(object.type==='fence')mesh=this.isDino?a.obstacle(object.obstacle):a.fence();
+      else if(object.type==='fence')mesh=this.isDino?a.obstacle(object.obstacle,object.z):a.fence();
       else mesh=a.creature(object.type,object.weapon,this.episodeId);
       mesh.position.set(object.x,object.type==='rainbow'?1.08:0,-object.z);
       if(['troll','dragon','boss'].includes(object.type))mesh.traverse(part=>{if(part.isMesh)part.castShadow=false;});
       this.scene.add(mesh);return mesh;
     });
     this.herdMeshes=herds.map(herd=>Array.from({length:herd.count},(_,i)=>{
-      const runner=this.isDino?a.dinosaur('small'):a.unicorn(HORSES[i%3]);runner.scale.setScalar(this.isDino?.84:.72);runner.visible=false;runner.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(runner);return runner;
+      const runner=this.isDino?a.stegosaurus():a.unicorn(HORSES[i%3]);runner.scale.setScalar(this.isDino?.84:.72);runner.visible=false;runner.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(runner);return runner;
     }));
     this.witchMeshes=(options.witches||[]).map(herd=>Array.from({length:herd.count},()=>{
       const flyer=this.isDino?a.pterodactyl():a.witch();flyer.visible=false;flyer.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(flyer);return flyer;
     }));
     this.rockMeshes=Array.from({length:8},()=>{const rock=a.mesh(this.scene,'rock',0x82918a,0,.36,0,.36);rock.visible=false;return rock;});
+    if(this.isDino){
+      this.lavaTexture=lavaTexture();for(const mesh of this.objectMeshes)if(mesh.userData.lava){mesh.userData.lava.material.map=this.lavaTexture;mesh.userData.lava.material.emissiveMap=this.lavaTexture;mesh.userData.lava.material.needsUpdate=true;}
+      this.giantActor=a.giganotosaurus();this.giantActor.scale.setScalar(GIANT.scale);this.giantActor.visible=false;this.giantActor.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(this.giantActor);
+    }
     this.skyRoad=skyRoad(a);this.scene.add(this.skyRoad);
     this.skyPickups=Array.from({length:5},(_,i)=>{const z=RULES.bonusStart+(i+1)*(RULES.bonusEnd-RULES.bonusStart)/6;const mesh=this.isDino?a.amber():a.rainbow();mesh.scale.setScalar(.67);mesh.position.set(0,skyHeightAt(z)+1,-z);mesh.visible=false;this.scene.add(mesh);return mesh;});
     this.bonusGate=new THREE.Group();this.bonusGate.position.z=-RULES.bonusStart;this.scene.add(this.bonusGate);
@@ -92,11 +114,11 @@ export class MagicForest{
   }
   makeGround(){
     const a=this.assets,random=seeded(55);
-    const geometry=new THREE.PlaneGeometry(160,RULES.length+300,18,48);geometry.rotateX(-Math.PI/2);geometry.translate(0,-.07,-RULES.length/2);
+    const geometry=new THREE.PlaneGeometry(320,RULES.length+600,32,70);geometry.rotateX(-Math.PI/2);geometry.translate(0,0,-RULES.length/2);
     const position=geometry.attributes.position;
-    for(let i=0;i<position.count;i++){const x=position.getX(i);if(Math.abs(x)>4)position.setY(i,-.1+(random()-.5)*Math.min(2.4,Math.abs(x)*.06));}
+    for(let i=0;i<position.count;i++)position.setY(i,terrainHeightAt(position.getX(i),position.getZ(i)));
     geometry.computeVertexNormals();
-    const ground=new THREE.Mesh(geometry,a.mat(this.isDino?0x7ca887:0x99b78f));ground.receiveShadow=true;this.scene.add(ground);
+    const ground=new THREE.Mesh(geometry,a.mat(this.isDino?0x7ca887:0x99b78f));this.groundTexture=natureTexture();ground.material.map=this.groundTexture;ground.receiveShadow=true;this.scene.add(ground);
     a.mesh(this.scene,'box',this.isDino?0xcebb8e:0xe6c998,0,-.055,-RULES.length/2,RULES.halfWidth*2,.11,RULES.length+90).castShadow=false;
     const edges=new THREE.Group();
     for(let z=0;z<RULES.length+15;z+=1.5)for(const side of [-1,1])a.mesh(edges,'rock',this.isDino?0x91a58c:0xaab697,side*(RULES.halfWidth+.13),.035,-z,.17+random()*.12,.085,.28+random()*.2);
@@ -131,6 +153,7 @@ export class MagicForest{
     this.shotGroup=new THREE.Group();this.shotGroup.visible=false;this.scene.add(this.shotGroup);
     this.shotBeams=RAINBOW.map(hex=>this.assets.mesh(this.shotGroup,'cylinder',new THREE.MeshBasicMaterial({color:hex,transparent:true,opacity:.9,depthWrite:false}),0,0,0,.014,1,.014));
     this.shotFlash=new THREE.Sprite(new THREE.SpriteMaterial({map:this.glow,color:0xffe6b5,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));this.shotFlash.scale.set(.6,.6,1);this.shotGroup.add(this.shotFlash);
+    this.shotGroup.traverse(part=>{part.castShadow=false;part.receiveShadow=false;});
     this.shotEnd=new THREE.Vector3();
   }
   resize(){
@@ -154,12 +177,14 @@ export class MagicForest{
   collect(object){for(let i=0;i<24;i++)this.burst.push({x:object.x,y:object.y??1.05,z:-object.z,vx:(Math.random()-.5)*2,vy:Math.random()*2,vz:(Math.random()-.5)*1.5,life:1.2,color:RAINBOW[i%6]});}
   fire(event){this.shotTime=.36;this.shotFresh=true;this.shotEnd.set(event.end.x,event.end.y,-event.end.z);if(event.target){this.collect({...event.target,y:event.target.type==='boss'?2:1});if(event.target.type==='boss')this.bossHitTime=.25;}}
   bossThrow(){this.bossThrowTime=.4;}
-  resetEffects(){this.burst.length=0;this.shotTime=0;this.shotFresh=false;this.bossHitTime=0;this.bossThrowTime=0;this.celebration=0;this.shadowDistance=null;this.updateHead(-1);}
+  resetEffects(){this.burst.length=0;this.shotTime=0;this.shotFresh=false;this.bossHitTime=0;this.bossThrowTime=0;this.celebration=0;this.giantQuake=0;this.giantQuakeFresh=false;this.shake=0;this.giantLook=0;this.cameraRoll=0;this.shadowDistance=null;this.updateHead(-1);}
   celebrate(){this.celebration=4;}
   rideView(){return {y:this.camera.position.y,z:this.camera.position.z,pitch:this.camera.rotation.x,clearance:this.camera.position.y-skyHeightAt(-this.camera.position.z),headScale:this.mount.userData.head.scale.x};}
+  giantStep(x){this.giantQuake=.36*Math.max(0,1-Math.abs(x)/32);this.giantQuakeFresh=true;}
+  environmentView(){return {deepTrees:this.deepForest.userData.treeCount,beamShadowCasters:this.shotBeams.filter(mesh=>mesh.castShadow).length,lavaOffset:this.lavaTexture?.offset.x,giantJaw:this.giantActor?.userData.jaw.rotation.x,shake:this.shake,giantLook:this.giantLook,roarVisible:this.giantActor?.visible};}
   animate(actor,time,gait=0){
     const data=actor.userData;
-    if(data.legs)data.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*.50);
+    if(data.legs)data.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(data.kind==='giganotosaurus'?.27:.50));
     if(data.tail)data.tail.rotation.y=Math.sin(time*2.8)*.18;
     if(data.wings)data.wings.forEach((wing,i)=>{wing.rotation.z=Math.sin(time*(data.kind==='pterodactyl'?8:2.2))*(i?-.28:.28);});
     if(data.arm)data.arm.rotation.x=this.bossThrowTime>0?Math.sin(this.bossThrowTime*6)*-.8:Math.sin(time*1.7)*.05;
@@ -174,8 +199,15 @@ export class MagicForest{
     const bounce=this.reducedMotion?0:moving?Math.sin(gait)*.025:Math.sin(time*1.5)*.004;
     const ride=riderCameraPose(game.distance);
     this.camera.position.set(game.x,ride.y+game.jumpHeight+(game.bonus.active?0:bounce),ride.z);
-    this.camera.rotation.x=ride.pitch;
-    this.camera.rotation.z=THREE.MathUtils.lerp(this.camera.rotation.z,this.reducedMotion?0:(game.x-this.lastX)*-.08,1-Math.exp(-10*dt));
+    const giant=game.giant,nearGiant=giant&&!giant.done&&giant.visible;
+    const proximity=nearGiant?THREE.MathUtils.clamp((game.distance-(GIANT.z-12))/(12-GIANT.stopDistance),0,1):0;
+    const lookTarget=nearGiant?.50*proximity*Math.max(0,1-Math.abs(giant.x)/28):0;
+    this.giantLook=THREE.MathUtils.lerp(this.giantLook,lookTarget,1-Math.exp(-4*dt));
+    this.giantQuake=Math.max(0,this.giantQuake-(this.giantQuakeFresh?0:dt));this.giantQuakeFresh=false;this.shake=this.reducedMotion?0:this.giantQuake;
+    this.camera.position.x+=Math.sin(time*43)*this.shake*.15;this.camera.position.y+=Math.cos(time*47)*this.shake*.16;
+    this.camera.rotation.x=ride.pitch+this.giantLook;
+    this.cameraRoll=THREE.MathUtils.lerp(this.cameraRoll,this.reducedMotion?0:(game.x-this.lastX)*-.08,1-Math.exp(-10*dt));
+    this.camera.rotation.z=this.cameraRoll+Math.sin(time*39)*this.shake*.025;
     this.sky.position.copy(this.camera.position);this.skyScenery.position.z=-game.distance;
     this.skyLandscape.position.set(0,0,-game.distance-80);this.skyLandscape.visible=game.flightHeight>1;
     if(this.horseId!==game.horseId)this.selectHorse(game.horseId);
@@ -186,18 +218,29 @@ export class MagicForest{
     const wrap=Math.floor(game.distance/4);
     if(wrap!==this.lastWrap){
       this.lastWrap=wrap;const matrix=new THREE.Matrix4(),limit=this.camera.position.z+25,span=144;
-      for(const {mesh,base}of this.wrapBatches){for(let i=0;i<mesh.count;i++){matrix.fromArray(base,i*16);const z=base[i*16+14];matrix.elements[14]=limit-((limit-z)%span+span)%span;mesh.setMatrixAt(i,matrix);}mesh.instanceMatrix.needsUpdate=true;}
+      for(const {mesh,base}of this.wrapBatches){for(let i=0;i<mesh.count;i++){matrix.fromArray(base,i*16);const z=base[i*16+14];matrix.elements[14]=limit-((limit-z)%span+span)%span;matrix.elements[13]=base[i*16+13]+terrainHeightAt(matrix.elements[12],matrix.elements[14]);mesh.setMatrixAt(i,matrix);}mesh.instanceMatrix.needsUpdate=true;}
       this.renderer.shadowMap.needsUpdate=true;
     }
     game.objects.forEach((object,i)=>{
-      const mesh=this.objectMeshes[i];mesh.visible=!object.done&&object.z>game.distance-4&&object.z<game.distance+115&&(!game.bonus.active||object.type==='rainbow');
+      const mesh=this.objectMeshes[i];mesh.visible=mesh.userData.lava?Math.abs(object.z-game.distance)<165:!object.done&&object.z>game.distance-4&&object.z<game.distance+115&&(!game.bonus.active||object.type==='rainbow');
       if(object.type==='rainbow'){mesh.position.y=1.08+Math.sin(time*2+i)*.08;mesh.rotation.y=Math.sin(time*1.5+i)*.20;}
       else if(object.type!=='fence'){
         this.animate(mesh,time+i,0);const scale=mesh.userData.baseScale||(object.type==='boss'&&this.isDino?1.55:1);mesh.scale.y=scale*(1+Math.sin(time*2+i)*.012);
         if(object.type==='boss'){mesh.rotation.x=this.bossThrowTime>0?Math.sin(this.bossThrowTime*7)*-.05:0;mesh.visible=mesh.visible&&(this.bossHitTime<=0||Math.floor(this.bossHitTime*30)%2===0);}
       }
-      if(mesh.userData.lava)mesh.userData.lava.material.emissiveIntensity=.5+Math.sin(time*2)*.09;
+      if(mesh.userData.lava&&mesh.visible){mesh.userData.lava.material.emissiveIntensity=.64+Math.sin(time*2)*.09;mesh.userData.streaks.forEach((streak,i)=>{const x=(streak.userData.seedX+90+time*1.7)%180-90,z=riverMeander(x)+Math.sin(i*2.1)*.23;streak.position.set(x,riverHeightAt(x,-object.z+z)+.018,z);streak.scale.x=.34+Math.sin(time*2+i)*.07;});}
     });
+    if(this.lavaTexture)this.lavaTexture.offset.x=-time*.20;
+    if(this.giantActor){
+      this.giantActor.visible=!!nearGiant;
+      if(nearGiant){
+        const actor=this.giantActor;actor.position.set(giant.x,terrainHeightAt(giant.x,-giant.z)+.07+(giant.walking?Math.abs(Math.sin(giant.gait))*.075:0),-giant.z);actor.rotation.y=Math.PI/2;
+        this.animate(actor,giant.elapsed,giant.gait);actor.updateWorldMatrix(true,true);
+        const head=actor.userData.head,headPosition=head.getWorldPosition(new THREE.Vector3());
+        const facing=Math.atan2(this.camera.position.x-headPosition.x,this.camera.position.z-headPosition.z)-Math.PI/2;
+        head.rotation.y=facing*giant.look;head.rotation.x=.18*giant.look;actor.userData.jaw.rotation.x=giant.jaw;
+      }
+    }
     game.herds.forEach((herd,h)=>this.herdMeshes[h].forEach((runner,i)=>{
       const phase=(herd.elapsed-i*.52)/3.3;runner.visible=herd.elapsed>=0&&!herd.cleared&&phase>=0&&phase<=1;
       if(!runner.visible)return;runner.position.set(herd.direction*(-8+16*phase),Math.abs(Math.sin(herd.elapsed*10+i))*.04,-herd.z+(i%2-.5)*.6);runner.rotation.y=herd.direction*Math.PI/2;this.animate(runner,herd.elapsed,herd.elapsed*11+i);

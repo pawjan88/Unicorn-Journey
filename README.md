@@ -17,7 +17,9 @@ Na starcie wybiera się jeden z trzech koników o innych kolorach maści, kopyt 
 
 **Tęczowy Las:** 50 opcjonalnych tęcz, płotki (w tym pięć par wymagających dwóch skoków), stada jednorożców, latające czarownice, zbrojne trolle z mieczami lub toporami i tarczami, smoki oraz duży troll toczący kamienie. Boss wymaga trzech trafień.
 
-**Świat dinozaurów:** 50 bursztynów, lawowe rzeczki i pnie do przeskoczenia, małe dinozaury i pterodaktyle przecinające drogę, triceratopsy, diplodoki, dinozaury między palmami i ważki. Pod wulkanem stoi tyranozaur, który wymaga trzech trafień. Epizod kończy się wjechaniem do przestrzennej jaskini.
+**Świat dinozaurów:** 50 bursztynów, lawowe rzeczki i pnie do przeskoczenia, stada małych stegozaurów z płytami i kolcami oraz pterodaktyle z błoniastymi skrzydłami przecinające drogę, triceratopsy, diplodoki, dinozaury między palmami i ważki. Pod wulkanem stoi tyranozaur, który wymaga trzech trafień. Przed finałem jeden ogromny giganotozaur przechodzi przez drogę, zatrzymuje się na jej środku, odwraca głowę do gracza i ryczy z otwartą paszczą. Trzeba poczekać, aż odejdzie; krokom towarzyszą drżenie kamery i ciężkie odgłosy. Epizod kończy się wjechaniem do przestrzennej jaskini.
+
+Lasy w obu światach sięgają szeroko poza pobocza i ponad 600 metrów w głąb sceny. Rośliny i podłoże mają delikatne tekstury. Zakręcające rzeki lawy przepływają przez dżunglę po obu stronach drogi; powierzchnia oraz jasne smugi płyną w czasie gry. Tęczowy promień nie rzuca cienia. Opcja ograniczonego ruchu w przeglądarce wyłącza drżenie kamery.
 
 W obu epizodach zachowano osiem sekund Galopu po Tęczy ponad lasem, pięć dodatkowych skarbów oraz wzgórza z zamkiem. Nie ma utraty żyć ani wymogu zebrania wszystkich przedmiotów. Na mecie wybucha konfetti.
 
@@ -54,6 +56,8 @@ node scripts/render-previews.cjs
 - `dist/low-poly-models.js`: geometria postaci i środowiska, wspólne materiały oraz renderowanie kart menu.
 - `dist/forest.js`: scena, kamera z siodła, światło, cienie, animacje, pule obiektów i efekty magii.
 - `dist/game.js`: klawiatura, interfejs, pauza, wybór konika i przejście między epizodami.
+- `dist/giant-encounter.js`: fazy przejścia, zatrzymania i ryku giganotozaura.
+- `dist/environment-profile.js`: wspólny profil terenu i koryt lawy.
 - `dist/ride-camera.js`: pozycja i orientacja kamery nad podjazdem, szczytem oraz zjazdem tęczy.
 - `dist/audio.js`, `dist/audio/`: mikser oraz nagrania. Dostarczone MP3 zachowano bez zmian.
 - `dist/characters.js`, `dist/episodes.js`: palety i konfiguracja epizodów.
@@ -61,4 +65,4 @@ node scripts/render-previews.cjs
 
 Otoczenie jest grupowane w `InstancedMesh`, geometria jest współdzielona, cienie mają ograniczony obszar, a rozdzielczość adaptuje się do wolniejszego renderowania. Zamiana epizodu zwalnia zasoby poprzedniej sceny. Utrata kontekstu WebGL wstrzymuje grę; po przywróceniu można kontynuować.
 
-GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/ride-visibility` do akceptacji.
+GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/deep-forest-and-giant` do akceptacji.
