@@ -1,33 +1,35 @@
-# Unicorn Journey — trzy epizody low-poly 3D: raport testów
+# Unicorn Journey — Kraina Lodu i kryształowy jednorożec
 
-Wersja z trzema epizodami przeszła testy i została zatwierdzona przez właściciela do publikacji na GitHubie. Gra: https://pawjan88.github.io/Unicorn-Journey/.
+Czwarty epizod oraz Lodowa Iskierka są przygotowane do prywatnych testów właściciela. Publiczna gra na GitHubie pozostaje przy ostatniej zatwierdzonej wersji z trzema epizodami.
 
 ## Zakres
 
-- Trzy obrazkowe karty epizodów i trzy koniki. Wybór maści, kopyt i roga zachowuje się w kolejnych światach.
-- Kampania przechodzi bez dodatkowego kliknięcia z lasu do dinozaurów, następnie po wjeździe do wulkanu do jaskiń. Wynik i ponowny start pojawiają się po trzecim epizodzie.
-- Jaskinie mają lawowe tunele, grotę grzybów i kryształów, podziemne jezioro, komnatę Serca i wyjazd na słoneczną polanę. Sklepienie pozostaje ponad całą tęczą i wielkim żółwiem. Sceneria jest grupowana w instancje.
-- Zbieramy 50 opcjonalnych kryształów. Szczeliny i przewrócone kolumny wymagają skoku; zachowano pięć podwójnych przeszkód.
-- Golemy i kryształowe kraby wymagają jednego trafienia. Przyjazne jaszczurki, nietoperze i żółw przecinają drogę; para wymaga oczekiwania. Tych przeszkód nie usuwa magia ani skok.
-- Tęczowy most nad jeziorem daje pięć bonusowych kryształków. Po zjeździe do pierwszej pary przeciwników pozostaje 16 m, czyli około czterech sekund jazdy, we wszystkich epizodach.
-- Obsydianowy Strażnik toczy kamienie i wymaga trzech trafień. Zapalają się kryształy pancerza i trzy części Serca; po wygranej posąg odsuwa się na bok, a jaskinia rozjaśnia się przy wyjeździe. Na końcu wybucha konfetti.
-- Zachowano sterowanie strzałkami, spacją i Ctrl, głowę w siodle mniejszą o 20%, brak napisów na trasie, brak cienia promienia i bezpieczny zjazd z tęczy.
+- Cztery obrazkowe karty epizodów i cztery koniki. Lodowa Iskierka jest grywalna we wszystkich światach: ma jasnoniebieski, półprzezroczysty kryształowy korpus, lodową grzywę, niebieskie kopyta i cyjanowy róg.
+- Oryginalne trzy palety i materiały zachowano. Róg, kopyta i maść nowego konika pasują do portretu; obrót głowy podczas skoku i punkt wyjścia tęczowego strzału pozostają na modelu. Głowa w siodle zachowuje skalę 0,8.
+- Kampania przechodzi bez dodatkowego kliknięcia: las → dinozaury → jaskinie → Kraina Lodu. Wybrany konik i przytrzymane sterowanie przechodzą do kolejnych epizodów. Każdy świat można uruchomić bezpośrednio z menu.
+- Zimowy świat obejmuje gęsty śnieżny las, zamarznięte jezioro z zorzą, przełęcz, Lodowy Zamek i dziedziniec. Scenerię grupują instancje; śnieg i zorza używają zegara gry.
+- Zbieramy 50 opcjonalnych złotych śnieżynek. Szczeliny w lodzie i ośnieżone pnie wymagają skoku; zachowano pięć par podwójnych przeszkód.
+- Chochliki i lodowe smoki wymagają jednego trafienia. Renifery, sowy i jeden wielki mamut przecinają drogę i wymagają oczekiwania. Mamut zatrzymuje się, spogląda na jeźdźca i wydaje łagodny odgłos.
+- Tęczowy bonus trwa osiem sekund nad zamarzniętym jeziorem i daje pięć dodatkowych śnieżynek. Po lądowaniu do przeciwników pozostaje 16 m, czyli około czterech sekund jazdy.
+- Król Mrozu toczy śnieżne kule. Pierwsze dwa trafienia zapalają kryształy korony, pozostawiając Elzę i Annę w lodowych więzieniach. Dopiero trzecie trafienie uwalnia obie postacie i otwiera bramę.
+- Lód pęka i zanika, siostry przechodzą na dziedziniec, obracają się do jeźdźca i machają. Zorza odzyskuje kolory. Wjazd do zamku kończy grę konfetti i wynikiem. Ponowny start odtwarza więzienia, bossa, mamuta i stan uwolnienia.
+- Zachowano strzałki, spację i Ctrl, precyzyjne zatrzymywanie po puszczeniu ↑, brak napisów podczas jazdy, brak cienia promienia i bezpieczny zjazd z tęczy.
 
 ## Dźwięk
 
-Dołączono siedem lokalnych plików jaskiniowych: wodę i powietrze, kamienie, parę, nietoperze i skrzydła, małe gady, oddech żółwia oraz nagrany kryształowy dzwonek. Źródła CC0, autorzy, obróbka i charakter każdego pliku opisano w `dist/audio/CAVE-SOURCES.md`. Pomruk żółwia jest gotowym naturalistycznym foley AI, nie nagraniem terenowym żółwia. Pozostałe efekty bazują na nagraniach i foley.
+Dołączono sześć lokalnych zimowych plików CC0: zimowy wiatr, śnieg, pękający lód, sowy i skrzydła, stado oraz oddech/parsknięcie słonia jako foley mamuta. Dokładne źródła, autorzy i zamienniki gatunkowe są w `dist/audio/WINTER-SOURCES.md`. Dźwięki zimowe nie używają syntezy ani AI.
 
-Dostarczone MP3 konia, owadów, dżungli i grzmotów pozostają bez zmian. W jaskiniach kopyta i rżenie mają krótki pogłos; magia brzmi jak delikatny strumień powietrza. Działają pauza, wyciszenie i osobne suwaki. Mikser ładuje 20 buforów, ogranicza nakładanie efektów, a nieobecny plik dźwiękowy nie blokuje gry.
+Dostarczone MP3 pozostają bez zmian. W zimie pod nagraniem kopyt gra cichy śnieżny szelest. Obie warstwy zatrzymują się podczas postoju, skoku, pauzy i wyciszenia, bez powielania pętli. Mikser obsługuje 26 buforów, osobne suwaki, ogranicznik i łagodne wyciszenie tła przy efektach. Brak pojedynczego pliku audio nie blokuje gry.
 
 ## Weryfikacja
 
-- `npm test`: 15 zestawów, 0 niepowodzeń; testy reguł, pełne przejazdy trzech epizodów, wybory i przejścia, audio, animacja, konstrukcja modeli, sklepienie i jezioro, Serce oraz odstęp po tęczy.
-- `npm run test:browser`: 31 scenariuszy, 41 zrzutów, 0 błędów JavaScript i nieudanych żądań zasobów.
-- `npm run test:cave`: 15 scenariuszy, 20 zrzutów, 0 błędów; osobny przebieg trzeciego epizodu i końcowych ujęć, z ponownym sprawdzeniem interfejsu, pauzy, pełnego ekranu, kontekstu WebGL i ograniczonego ruchu.
-- `npm run test:landing`: osobny scenariusz zjazdu, spokojnego odcinka i trafiania przeciwnika w każdym z trzech światów.
+- `npm test`: 19 zestawów, 0 niepowodzeń. Reguły i pełne przejazdy wszystkich epizodów, jednorazowe uwolnienie dokładnie po trzech trafieniach, wybory/przejścia, audio, modele, materiały i kamera tęczy.
+- `npm run test:winter`: 15 scenariuszy, 23 zrzuty, 0 błędów JavaScript i brakujących zasobów. Obejmuje zimowe przeszkody, strzelanie, śnieżne kroki, zwierzęta, bonus, mamuta, więzienia, uwolnienie, pauzę, bramę, dziedziniec, konfetti, ponowny start i układ menu.
+- `npm run test:browser`: 39 scenariuszy, 57 zrzutów, 0 błędów JavaScript i brakujących zasobów; pełny przebieg kampanii i kontroli interfejsu. Raport: `artifacts/playtest/report.json`.
+- `npm run test:landing`: zjazd, spokojny odcinek i strzał w każdym z czterech epizodów.
 
-Scenariusze przeglądarkowe używają rzeczywistych klawiszy i Web Audio. Lokalne punkty kontrolne przyspieszają dotarcie do przeszkód, bonusu, spotkań i bossów. Pełne przejazdy sprawdzają dodatkowo testy symulacji. Narzędzia QA działają tylko na localhost z parametrem `?qa=1`.
+Testy przeglądarkowe używają rzeczywistych klawiszy i Web Audio. Lokalne punkty kontrolne przyspieszają dotarcie do przeszkód i finałów; pełne przejazdy sprawdzają też niezależne testy symulacji. Narzędzia QA są dostępne wyłącznie na localhost z `?qa=1`.
 
-Zrzuty oceniano wizualnie pod kątem widoczności drogi, postaci, sklepienia, zjazdu i Serca. Przy pełnym ekranie test czeka na dwie klatki po zmianie rozmiaru płótna, aby ocenić wyrenderowaną scenę. Menu jest sprawdzane w rozmiarach 1440 × 960 i 390 × 844.
+Zrzuty sprawdzono wizualnie: przezroczystość i obrót głowy Lodowej Iskierki, postacie w więzieniach, otwarta brama, powitanie sióstr oraz droga pod zorzą. Menu sprawdzane jest przy 1440 × 960 i 390 × 844. Pełny ekran czeka na wyrenderowanie po zmianie rozmiaru płótna. Sprawdzane są również utrata kontekstu WebGL i ograniczony ruch.
 
-Raporty i obrazy: `artifacts/playtest/`, `artifacts/cave-playtest/`, `artifacts/landing-playtest/` (artefakty poza Git). Chromium z programowym WebGL; wyniki nie stanowią benchmarku fizycznego komputera ani weryfikacji wszystkich silników przeglądarek.
+Artefakty: `artifacts/playtest/` i `artifacts/winter-playtest/` (poza Git). Chromium z programowym WebGL; wyniki nie są benchmarkiem fizycznego komputera ani testem wszystkich silników przeglądarek.

@@ -4,8 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const root=path.resolve(__dirname,'../dist');
-const landingOnly=process.argv.includes('--rainbow-landing'),caveOnly=process.argv.includes('--cave');
-const output=path.resolve(process.env.PLAYTEST_OUTPUT||(landingOnly?'artifacts/landing-playtest':caveOnly?'artifacts/cave-playtest':'artifacts/playtest'));
+const landingOnly=process.argv.includes('--rainbow-landing'),caveOnly=process.argv.includes('--cave'),winterOnly=process.argv.includes('--winter');
+const output=path.resolve(process.env.PLAYTEST_OUTPUT||(landingOnly?'artifacts/landing-playtest':caveOnly?'artifacts/cave-playtest':winterOnly?'artifacts/winter-playtest':'artifacts/playtest'));
 fs.mkdirSync(output,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.mp3':'audio/mpeg','.ttf':'font/ttf','.png':'image/png'};
 const server=http.createServer((req,res)=>{
@@ -45,7 +45,7 @@ async function run(){
     });assert.deepEqual(words,[],'no visible captions or instructions cover the playfield');
   }
   if(landingOnly){
-    for(const episode of ['forest','dino','cave']){
+    for(const episode of ['forest','dino','cave','ice']){
       if((await state()).mode==='playing'){await page.keyboard.press('Escape');await page.click('#back-menu');}
       await page.click('#episode-'+episode);await page.click('#play');
       await check(episode+': complete rainbow descent and five bonus pickups',async()=>{
@@ -62,17 +62,18 @@ async function run(){
     }
     assert.deepEqual(report.errors,[],'no browser errors or failed assets');report.result='passed';report.finishedAt=new Date().toISOString();return;
   }
+  if(!winterOnly){
   if(!caveOnly){
-  await check('First actionable menu, local font, three episode cards and three horses',async()=>{
-    assert.equal(await page.locator('.episode-option').count(),3);assert.equal(await page.locator('#horse-picker button').count(),3);
+  await check('First actionable menu, local font, four episode cards and four horses',async()=>{
+    assert.equal(await page.locator('.episode-option').count(),4);assert.equal(await page.locator('#horse-picker button').count(),4);
     assert(await page.evaluate(()=>document.fonts.check('16px Fredoka')));assert.equal((await state()).audio.state,undefined);
     assert(await page.locator('#play').evaluate(node=>{const rect=node.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight;}));await shot('01-menu-desktop');
   });
-  await check('Episode selection and all three coat/horn palettes',async()=>{
-    for(const horse of ['sunny','moon','rose']){await page.click('#horse-'+horse);assert.equal((await state()).horse,horse);assert.equal(await page.locator('#horse-'+horse).getAttribute('aria-pressed'),'true');}
+  await check('Episode selection and all four coat/horn palettes',async()=>{
+    for(const horse of ['sunny','moon','rose','ice']){await page.click('#horse-'+horse);assert.equal((await state()).horse,horse);assert.equal(await page.locator('#horse-'+horse).getAttribute('aria-pressed'),'true');}
     await page.click('#episode-dino');assert.equal((await state()).episode,'dino');await shot('02-menu-dinosaurs');
-    await page.click('#episode-forest');assert.equal((await state()).horse,'rose');await page.click('#play');
-    await wait(()=>window.__unicornQA.snapshot().audio.buffers===20);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
+    await page.click('#episode-forest');assert.equal((await state()).horse,'ice');await page.click('#play');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===26);await shot('03-forest');report.renderer=await state();assert.equal(await page.locator('#world').evaluate(node=>getComputedStyle(node).imageRendering),'auto');assert((await state()).render.triangles>1000,'a volumetric scene is rendered');
   });
   await check('Rider head reduced by 20%, deep forest and gameplay free of captions',async()=>{assert.equal((await state()).view.headScale,.8);assert((await state()).environment.deepTrees>1200);assert.equal(await page.locator('#herd-notice, #bonus-notice, .spell-hint, .scene-label').count(),0);await noCaptions();});
   await check('Hold Up to ride, release to stop, steer both ways and respect path bounds',async()=>{
@@ -123,7 +124,7 @@ async function run(){
   await check('Forest boss needs three hits, then Episode 1 automatically continues into Episode 2',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);await shot('11-forest-boss');
     await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.hp===2);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.hp===1);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);
-    await checkpoint(395.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='dino');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'rose');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'dino-ambient');await shot('12-dinosaur-game');
+    await checkpoint(395.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='dino');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'ice');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'dino-ambient');await shot('12-dinosaur-game');
   });
   await check('Deep jungle, flowing lava river, jump and leathery pterodactyl crossing',async()=>{
     assert((await state()).environment.deepTrees>1200);await checkpoint(26);await shot('13-lava');await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().blocked);const offset=(await state()).environment.lavaOffset;await wait(before=>window.__unicornQA.snapshot().environment.lavaOffset!==before,offset);await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>30.5);await page.keyboard.up('ArrowUp');
@@ -143,11 +144,11 @@ async function run(){
   await check('Tyrannosaur boss and automatic volcano-to-cave transition',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).audio.music,'dino-thunder');await noCaptions();await shot('15-tyrannosaur');
     await page.keyboard.down('Control');await wait(()=>window.__unicornQA.snapshot().boss.done);await page.keyboard.up('Control');
-    await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='cave');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'rose');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'cave-ambient');await shot('16-cave-arrival');
+    await checkpoint(395.7);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='cave');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'ice');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'cave-ambient');await shot('16-cave-arrival');
   });
   }else{
-    await page.click('#horse-rose');await page.click('#episode-cave');await page.click('#play');
-    await wait(()=>window.__unicornQA.snapshot().audio.buffers===20);await shot('16-cave-arrival');
+    await page.click('#horse-ice');await page.click('#episode-cave');await page.click('#play');
+    await wait(()=>window.__unicornQA.snapshot().audio.buffers===26);await shot('16-cave-arrival');
   }
   await check('Cave: original controls, fifty optional crystals and natural ambiance',async()=>{
     assert.equal((await state()).episode,'cave');assert.equal((await state()).audio.music,'cave-ambient');assert((await state()).audio.reverb>0);assert.equal((await state()).view.headScale,.8);await noCaptions();
@@ -178,11 +179,49 @@ async function run(){
     await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.giant.elapsed>5.6&&s.audio.giantRoar;});const greeting=await state();assert.equal(greeting.giant.type,'crystal-turtle');assert(greeting.waiting);assert.equal(greeting.giant.x,0);await noCaptions();await shot('16k-crystal-turtle');
     await page.waitForFunction(()=>window.__unicornQA.snapshot().giant.done,null,{timeout:45000});await wait(()=>window.__unicornQA.snapshot().distance>307);await page.keyboard.up('ArrowUp');
   });
-  await check('Cave: three-hit guardian restores the visible heart, statue clears the exit, sunlit finish and replay',async()=>{
+  await check('Cave: three-hit guardian restores the heart and automatically continues into winter',async()=>{
     await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);assert.equal((await state()).environment.cave.heartCharge,0);await shot('16l-obsidian-guardian');
     for(const hp of [2,1,0]){await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(n=>{const s=window.__unicornQA.snapshot();return s.boss.hp===n&&s.environment.cave.heartCharge===3-n;},hp);assert.equal((await state()).environment.cave.heartCharge,3-hp);}
     await shot('16m-heart-restored');await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>390);await page.keyboard.up('ArrowUp');assert.equal((await state()).environment.cave.section,'sunlit-clearing');await shot('16n-sunlit-clearing');
-    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('16o-finish-confetti');assert(await page.locator('#again').isVisible());await page.click('#again');assert.equal((await state()).mode,'playing');assert.equal((await state()).distance,0);assert.equal((await state()).boss.hp,3);assert.equal((await state()).giant.elapsed,-1);
+    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().episode==='ice');assert.equal((await state()).mode,'playing');assert.equal((await state()).horse,'ice');await wait(()=>window.__unicornQA.snapshot().distance>.2);await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.music,'winter-ambient');await shot('winter-01-arrival');
+  });
+  }else{
+    await shot('winter-00-menu');assert.equal(await page.locator('.episode-option').count(),4);assert.equal(await page.locator('#horse-picker button').count(),4);await page.click('#horse-ice');await page.click('#episode-ice');await page.click('#play');await wait(()=>window.__unicornQA.snapshot().audio.buffers===26);await shot('winter-01-arrival');
+  }
+  await check('Winter: crystal unicorn, snowflakes, original controls and natural snow under hooves',async()=>{
+    assert.equal((await state()).horse,'ice');assert((await state()).environment.horseCrystal);assert.equal((await state()).view.headScale,.8);assert.equal((await state()).audio.music,'winter-ambient');await noCaptions();
+    await checkpoint(11.6);const count=(await state()).count;await page.keyboard.down('ArrowUp');await wait(n=>window.__unicornQA.snapshot().count>n,count);assert((await state()).audio.snow);await page.keyboard.up('ArrowUp');assert(!(await state()).audio.snow);await shot('winter-02-snowflakes');
+    await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().headFrame===2);assert(!(await state()).audio.snow);await page.keyboard.press('Escape');assert(Math.abs((await state()).render.headAngle)>1);await shot('winter-03-crystal-head-turn');await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().jumpTime===-1);
+  });
+  await check('Winter: two quick jumps across ice crack and snowy log',async()=>{
+    await checkpoint(28.9);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().blocked);await shot('winter-04-ice-crack');await page.keyboard.press('Control');assert((await state()).blocked);
+    await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>30.5);await wait(()=>window.__unicornQA.snapshot().jumpTime===-1);await wait(()=>window.__unicornQA.snapshot().blocked);await page.keyboard.press('Space');await wait(()=>window.__unicornQA.snapshot().distance>35.7);await page.keyboard.up('ArrowUp');
+  });
+  await check('Winter: snow imp and ice dragon each vanish after one stream hit',async()=>{
+    await checkpoint(43,1.12);const before=(await state()).enemiesRemaining;await shot('winter-05-enemies');await page.keyboard.press('Control');await wait(n=>window.__unicornQA.snapshot().enemiesRemaining===n-1,before);
+    await checkpoint(43,-.48);await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);const remaining=(await state()).enemiesRemaining;await page.keyboard.press('Control');await wait(n=>window.__unicornQA.snapshot().enemiesRemaining===n-1,remaining);assert.equal((await state()).environment.beamShadowCasters,0);
+  });
+  await check('Winter: reindeer and snowy owls cross safely with natural sounds',async()=>{
+    await checkpoint(89.4);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.crossing?.type==='reindeer'&&s.crossing.elapsed>1.4;});assert.equal((await state()).audio.crossing,'winter-herd');await shot('winter-06-reindeer');await wait(()=>window.__unicornQA.snapshot().distance>92);await page.keyboard.up('ArrowUp');
+    await checkpoint(141.9);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.crossing?.type==='owl'&&s.crossing.elapsed>1.4;});await page.keyboard.up('ArrowUp');assert.equal((await state()).audio.crossing,'winter-wings');await shot('winter-07-snowy-owls');
+  });
+  await check('Winter: rainbow above frozen lake and aurora, five bonus flakes and safe descent',async()=>{
+    await checkpoint(193.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().bonus);await page.keyboard.up('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>=209);assert.equal((await state()).environment.winter.section,'frozen-lake');await shot('winter-08-aurora-rainbow');
+    await wait(()=>window.__unicornQA.snapshot().distance>=219);assert((await state()).view.clearance>1.4);await shot('winter-09-descent');await wait(()=>!window.__unicornQA.snapshot().bonus);assert.equal((await state()).bonusCount,5);const enemies=(await state()).enemiesRemaining;await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>=238);await page.keyboard.up('ArrowUp');assert.equal((await state()).enemiesRemaining,enemies);await shot('winter-10-frozen-lake');
+  });
+  await check('Winter: mammoth stops, greets the rider and clears the road',async()=>{
+    await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>{const s=window.__unicornQA.snapshot();return s.giant.elapsed>5.6&&s.audio.giantRoar;});assert.equal((await state()).giant.type,'mammoth');assert((await state()).waiting);await shot('winter-11-mammoth');await noCaptions();
+    await page.waitForFunction(()=>window.__unicornQA.snapshot().giant.done,null,{timeout:45000});await wait(()=>window.__unicornQA.snapshot().distance>307);await page.keyboard.up('ArrowUp');
+  });
+  await check('Winter: Elsa and Anna stay imprisoned until exactly the third Frost King hit',async()=>{
+    await checkpoint(374);await wait(()=>window.__unicornQA.snapshot().boss.active);await wait(()=>window.__unicornQA.snapshot().environment.winter.icePrisonsVisible);assert.deepEqual((await state()).rescue.names,['Elza','Anna']);assert(!(await state()).rescue.freed);assert(!(await state()).environment.winter.gateOpen);await shot('winter-12-locked-sisters');
+    for(const hp of [2,1]){await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(n=>window.__unicornQA.snapshot().boss.hp===n,hp);assert(!(await state()).rescue.freed);assert(!(await state()).environment.winter.princessesFreed);}
+    await shot('winter-13-two-crown-crystals');await wait(()=>window.__unicornQA.snapshot().shotCooldown===0);await page.keyboard.press('Control');await wait(()=>{const s=window.__unicornQA.snapshot();return s.boss.done&&s.rescue.freed&&s.environment.winter.princessesFreed;});assert((await state()).environment.winter.gateOpen);await shot('winter-14-ice-breaking');
+  });
+  await check('Winter: rescue freezes on pause, sisters walk and wave, restored aurora and courtyard finish',async()=>{
+    await wait(()=>window.__unicornQA.snapshot().environment.winter.rescueProgress>.2);await page.keyboard.press('Escape');const held=(await state()).environment.winter;await page.waitForTimeout(250);assert.deepEqual((await state()).environment.winter.princessPositions,held.princessPositions);await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().environment.winter.rescueProgress===1);assert(!(await state()).environment.winter.icePrisonsVisible);assert((await state()).environment.winter.auroraStrength>.4);await shot('winter-15-free-sisters');
+    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>390);await page.keyboard.up('ArrowUp');await checkpoint(394.4);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await shot('winter-16-courtyard-welcome');
+    await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().mode==='finished');await page.keyboard.up('ArrowUp');await shot('winter-17-finish-confetti');assert(await page.locator('#again').isVisible());assert((await page.locator('#overlay').innerText()).includes('Elza i Anna są wolne'));await page.click('#again');await wait(()=>window.__unicornQA.snapshot().environment.winter.icePrisonsVisible);assert(!(await state()).rescue.freed);assert.equal((await state()).horse,'ice');assert.equal((await state()).boss.hp,3);assert.equal((await state()).distance,0);
   });
   await check('Fullscreen resizes the 3D canvas, then restores the layout',async()=>{
     await page.click('#fullscreen');await wait(()=>!!document.fullscreenElement);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await shot('17-fullscreen');await page.click('#fullscreen');await wait(()=>!document.fullscreenElement);assert((await state()).render.width<=1600);
@@ -191,7 +230,7 @@ async function run(){
     await page.evaluate(()=>window.__unicornQA.loseContext());await wait(()=>window.__unicornQA.snapshot().mode==='paused');await page.waitForTimeout(300);await page.evaluate(()=>window.__unicornQA.restoreContext());await page.waitForTimeout(1000);await page.click('#resume');await wait(()=>window.__unicornQA.snapshot().mode==='playing');await shot('18-context-recovered');
   });
   await check('Keyboard navigation and return to menu preserve the selected horse',async()=>{
-    await page.keyboard.press('Escape');await page.click('#back-menu');assert.equal((await state()).mode,'intro');assert.equal((await state()).horse,'rose');await page.locator('#episode-forest').focus();await page.keyboard.press('Enter');assert.equal((await state()).episode,'forest');
+    await page.keyboard.press('Escape');await page.click('#back-menu');assert.equal((await state()).mode,'intro');assert.equal((await state()).horse,'ice');await page.locator('#episode-forest').focus();await page.keyboard.press('Enter');assert.equal((await state()).episode,'forest');
   });
   await check('Mobile menu has no horizontal overflow and Start stays reachable',async()=>{
     await page.setViewportSize({width:390,height:844});await shot('19-menu-mobile');assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));const rect=await page.locator('#play').boundingBox(),game=await page.locator('.game').boundingBox();assert(rect.y+rect.height<=game.y+game.height);await page.click('#play');await shot('20-game-mobile');
@@ -200,7 +239,7 @@ async function run(){
     await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.locator('#play:not([disabled])').waitFor({timeout:60000});assert.equal(await page.locator('.horse-option').first().evaluate(node=>getComputedStyle(node).transitionDuration),'0s');await shot('21-reduced-motion');
   });
   await check('Reduced motion suppresses giant camera shake',async()=>{
-    await page.click('#episode-dino');await page.click('#play');await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().giant.elapsed>1);assert.equal((await state()).environment.shake,0);await page.keyboard.up('ArrowUp');
+    await page.click('#episode-ice');await page.click('#horse-ice');await page.click('#play');await checkpoint(303.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().giant.elapsed>1);assert.equal((await state()).environment.shake,0);await page.keyboard.up('ArrowUp');
   });
   await check('Normal URL exposes no QA controls',async()=>{await page.goto(base);await page.locator('#play:not([disabled])').waitFor({timeout:60000});assert.equal(await page.evaluate(()=>typeof window.__unicornQA),'undefined');});
   assert.deepEqual(report.errors,[],'no browser errors or failed assets');

@@ -21,3 +21,9 @@
 .episode-picker .episode-option strong{font-size:11px;min-height:28px;display:grid;place-content:center;line-height:1.15}
 .game[data-episode=cave] .counter>#count-icon{background-image:url('assets/crystal-icon.svg')}
 @media(max-width:540px){.episode-picker .episode-option{width:calc((100% - 14px)/3)}.episode-picker .episode-option img{height:54px}.episode-picker .episode-option strong{font-size:10px;min-height:28px}}
+
+/* Four episode and horse picture cards keep the start button in reach. */
+.episode-picker .episode-option,.horse-picker .horse-option{width:calc((100% - 27px)/4)}
+.episode-picker .episode-option strong,.horse-picker .horse-option strong{font-size:10.5px;min-height:29px;line-height:1.2;display:grid;place-content:center}
+.game[data-episode=ice] .counter>#count-icon{background-image:url('assets/snowflake-icon.svg')}
+@media(max-width:540px){.episode-picker .episode-option,.horse-picker .horse-option{width:calc((100% - 21px)/4)}.episode-picker .episode-option img{height:48px}.horse-picker .horse-option img{height:57px}.episode-picker .episode-option strong,.horse-picker .horse-option strong{font-size:9.5px;min-height:29px}.horse-colors{gap:3px}}

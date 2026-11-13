@@ -1,13 +1,15 @@
 import * as THREE from './vendor/three.module.js';
-import { RULES, skyHeightAt } from './rules.js?v=16';
-import { HORSES } from './characters.js?v=12';
+import { RULES, skyHeightAt } from './rules.js?v=17';
+import { HORSES } from './characters.js?v=17';
 import { jumpHeadPose } from './animation.js?v=12';
-import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=14';
-import { riderCameraPose } from './ride-camera.js?v=16';
+import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=17';
+import { riderCameraPose } from './ride-camera.js?v=17';
 import {GIANT} from './giant-encounter.js?v=14';
 import {terrainHeightAt,riverMeander,riverHeightAt} from './environment-profile.js?v=14';
 import {CaveWorld} from './cave-world.js?v=16';
 import {caveCrystal,caveGolem,crystalCrab,crystalLizard,caveBat,crystalTurtle,caveObstacle} from './cave-models.js?v=16';
+import {WinterWorld} from './winter-world.js?v=17';
+import {snowflake,snowImp,iceDragon,frostKing,reindeer,snowyOwl,mammoth,winterObstacle} from './winter-models.js?v=17';
 
 const up=new THREE.Vector3(0,1,0);
 function skyRoad(assets){
@@ -52,14 +54,14 @@ export class MagicForest{
   static async prepare(){await document.fonts?.ready;}
   constructor(canvas,objects,herds,options={}){
     this.assets=new LowPolyAssets();const a=this.assets;
-    this.episodeId=options.episodeId||'forest';this.isDino=this.episodeId==='dino';this.isCave=this.episodeId==='cave';
+    this.episodeId=options.episodeId||'forest';this.isDino=this.episodeId==='dino';this.isCave=this.episodeId==='cave';this.isIce=this.episodeId==='ice';
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.12;
     this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.needsUpdate=true;
-    this.scene=new THREE.Scene();this.scene.background=new THREE.Color(this.isCave?0x263e4e:this.isDino?0xd4e2cc:0xe0eadb);
+    this.scene=new THREE.Scene();this.scene.background=new THREE.Color(this.isIce?0xd7e8f0:this.isCave?0x263e4e:this.isDino?0xd4e2cc:0xe0eadb);
     this.scene.fog=new THREE.FogExp2(this.scene.background,this.isCave?.012:this.isDino?.0058:.0054);
     this.camera=new THREE.PerspectiveCamera(64,16/9,.06,700);this.camera.position.set(0,2.05,1.7);this.camera.rotation.x=-.055;this.scene.add(this.camera);
-    this.ambient=new THREE.HemisphereLight(this.isCave?0xbad9ee:0xfff7e6,this.isCave?0x47465d:0x6c9484,this.isCave?1.3:1.8);this.scene.add(this.ambient);
+    this.ambient=new THREE.HemisphereLight(this.isIce?0xe7f6ff:this.isCave?0xbad9ee:0xfff7e6,this.isIce?0x91afc9:this.isCave?0x47465d:0x6c9484,this.isCave?1.3:1.8);this.scene.add(this.ambient);
     this.sun=new THREE.DirectionalLight(this.isCave?0xc5e9ed:0xffebcf,this.isCave?.95:2.5);this.sun.position.set(-14,27,-20);this.sun.castShadow=!this.isCave;
     this.sun.shadow.mapSize.set(1024,1024);Object.assign(this.sun.shadow.camera,{left:-18,right:18,top:25,bottom:-18,near:1,far:85});
     this.sun.shadow.bias=-.00035;this.sun.shadow.normalBias=.04;this.sun.shadow.radius=3;
@@ -73,6 +75,7 @@ export class MagicForest{
     this.lavaRows=objects.filter(object=>object.obstacle==='lava').map(object=>object.z);
     this.wrapBatches=[];
     if(this.isCave)this.caveWorld=new CaveWorld(a,this.scene);
+    else if(this.isIce)this.winterWorld=new WinterWorld(a,this.scene);
     else{
       this.makeGround();this.makeSky();
       const forestSource=new THREE.Group();
@@ -85,8 +88,9 @@ export class MagicForest{
     this.selectHorse(options.horseId||HORSES[0].id);
     this.objectMeshes=objects.map(object=>{
       let mesh;
-      if(object.type==='rainbow')mesh=this.isCave?caveCrystal(a):this.isDino?a.amber():a.rainbow();
-      else if(object.type==='fence')mesh=this.isCave?caveObstacle(a,object.obstacle,object.z):this.isDino?a.obstacle(object.obstacle,object.z):a.fence();
+      if(object.type==='rainbow')mesh=this.isIce?snowflake(a):this.isCave?caveCrystal(a):this.isDino?a.amber():a.rainbow();
+      else if(object.type==='fence')mesh=this.isIce?winterObstacle(a,object.obstacle,object.z):this.isCave?caveObstacle(a,object.obstacle,object.z):this.isDino?a.obstacle(object.obstacle,object.z):a.fence();
+      else if(this.isIce)mesh=object.type==='boss'?frostKing(a):object.type==='dragon'?iceDragon(a):snowImp(a);
       else if(this.isCave)mesh=object.type==='dragon'?crystalCrab(a):caveGolem(a,object.type==='boss');
       else mesh=a.creature(object.type,object.weapon,this.episodeId);
       mesh.position.set(object.x,object.type==='rainbow'?1.08:0,-object.z);
@@ -94,26 +98,27 @@ export class MagicForest{
       this.scene.add(mesh);return mesh;
     });
     this.herdMeshes=herds.map(herd=>Array.from({length:herd.count},(_,i)=>{
-      const runner=this.isCave?crystalLizard(a):this.isDino?a.stegosaurus():a.unicorn(HORSES[i%3]);runner.scale.setScalar(this.isCave?.9:this.isDino?.84:.72);runner.visible=false;runner.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(runner);return runner;
+      const runner=this.isIce?reindeer(a):this.isCave?crystalLizard(a):this.isDino?a.stegosaurus():a.unicorn(HORSES[i%HORSES.length]);runner.scale.setScalar(this.isCave?.9:this.isDino?.84:.72);runner.visible=false;runner.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(runner);return runner;
     }));
     this.witchMeshes=(options.witches||[]).map(herd=>Array.from({length:herd.count},()=>{
-      const flyer=this.isCave?caveBat(a):this.isDino?a.pterodactyl():a.witch();flyer.visible=false;flyer.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(flyer);return flyer;
+      const flyer=this.isIce?snowyOwl(a):this.isCave?caveBat(a):this.isDino?a.pterodactyl():a.witch();flyer.visible=false;flyer.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(flyer);return flyer;
     }));
-    this.rockMeshes=Array.from({length:8},()=>{const rock=a.mesh(this.scene,'rock',0x82918a,0,.36,0,.36);rock.visible=false;return rock;});
+    this.rockMeshes=Array.from({length:8},()=>{const rock=a.mesh(this.scene,'rock',this.isIce?0xf4fcff:0x82918a,0,.36,0,.36);rock.visible=false;return rock;});
     if(this.isDino){
       this.lavaTexture=lavaTexture();for(const mesh of this.objectMeshes)if(mesh.userData.lava){mesh.userData.lava.material.map=this.lavaTexture;mesh.userData.lava.material.emissiveMap=this.lavaTexture;mesh.userData.lava.material.needsUpdate=true;}
       this.giantActor=a.giganotosaurus();this.giantActor.scale.setScalar(GIANT.scale);this.giantActor.visible=false;this.giantActor.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(this.giantActor);
     }
     if(this.isCave){this.giantActor=crystalTurtle(a);this.giantActor.scale.setScalar(2.4);this.giantActor.visible=false;this.giantActor.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(this.giantActor);}
+    if(this.isIce){this.giantActor=mammoth(a);this.giantActor.scale.setScalar(2.4);this.giantActor.visible=false;this.giantActor.traverse(mesh=>{if(mesh.isMesh)mesh.castShadow=false;});this.scene.add(this.giantActor);}
     this.skyRoad=skyRoad(a);this.scene.add(this.skyRoad);
-    this.skyPickups=Array.from({length:5},(_,i)=>{const z=RULES.bonusStart+(i+1)*(RULES.bonusEnd-RULES.bonusStart)/6;const mesh=this.isCave?caveCrystal(a):this.isDino?a.amber():a.rainbow();mesh.scale.setScalar(.67);mesh.position.set(0,skyHeightAt(z)+1,-z);mesh.visible=false;this.scene.add(mesh);return mesh;});
+    this.skyPickups=Array.from({length:5},(_,i)=>{const z=RULES.bonusStart+(i+1)*(RULES.bonusEnd-RULES.bonusStart)/6;const mesh=this.isIce?snowflake(a):this.isCave?caveCrystal(a):this.isDino?a.amber():a.rainbow();mesh.scale.setScalar(.67);mesh.position.set(0,skyHeightAt(z)+1,-z);mesh.visible=false;this.scene.add(mesh);return mesh;});
     this.bonusGate=new THREE.Group();this.bonusGate.position.z=-RULES.bonusStart;this.scene.add(this.bonusGate);
     const gateArc=a.rainbow();gateArc.scale.setScalar(3.3);gateArc.position.y=.3;this.bonusGate.add(gateArc);
     if(this.isDino){
       this.volcano=a.volcano();this.volcano.position.z=-RULES.length-120;this.scene.add(this.volcano);
       this.cave=a.cave();this.cave.position.z=-RULES.length+4;this.scene.add(this.cave);
       const caveLight=new THREE.PointLight(0xffd08d,5,10,1.3);caveLight.position.set(0,2,-RULES.length+1);this.scene.add(caveLight);
-    }else if(!this.isCave){
+    }else if(!this.isCave&&!this.isIce){
       const arch=a.rainbow();arch.scale.setScalar(7.3);arch.position.set(0,.7,-RULES.length);this.scene.add(arch);
     }
     this.dragonflies=this.isDino?Array.from({length:10},()=>{const fly=a.dragonfly();this.scene.add(fly);return fly;}):[];
@@ -189,12 +194,12 @@ export class MagicForest{
   celebrate(){this.celebration=4;}
   rideView(){return {y:this.camera.position.y,z:this.camera.position.z,pitch:this.camera.rotation.x,clearance:this.camera.position.y-skyHeightAt(-this.camera.position.z),headScale:this.mount.userData.head.scale.x};}
   giantStep(x){this.giantQuake=.36*Math.max(0,1-Math.abs(x)/32);this.giantQuakeFresh=true;}
-  environmentView(){return {deepTrees:this.deepForest?.userData.treeCount||0,beamShadowCasters:this.shotBeams.filter(mesh=>mesh.castShadow).length,lavaOffset:this.lavaTexture?.offset.x,giantJaw:this.giantActor?.userData.jaw?.rotation.x,shake:this.shake,giantLook:this.giantLook,roarVisible:this.giantActor?.visible,cave:this.caveWorld?.diagnostics()};}
+  environmentView(){return {deepTrees:this.deepForest?.userData.treeCount||0,beamShadowCasters:this.shotBeams.filter(mesh=>mesh.castShadow).length,lavaOffset:this.lavaTexture?.offset.x,giantJaw:this.giantActor?.userData.jaw?.rotation.x,shake:this.shake,giantLook:this.giantLook,roarVisible:this.giantActor?.visible,cave:this.caveWorld?.diagnostics(),winter:this.winterWorld?.diagnostics(),horseCrystal:!!this.mount.userData.crystal};}
   animate(actor,time,gait=0){
     const data=actor.userData;
-    if(data.legs)data.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(['giganotosaurus','crystal-turtle'].includes(data.kind)?.27:.50));
+    if(data.legs)data.legs.forEach((leg,i)=>leg.rotation.x=Math.sin(gait+(i%2)*Math.PI)*(['giganotosaurus','crystal-turtle','mammoth'].includes(data.kind)?.27:.50));
     if(data.tail)data.tail.rotation.y=Math.sin(time*2.8)*.18;
-    if(data.wings)data.wings.forEach((wing,i)=>{wing.rotation.z=Math.sin(time*(['pterodactyl','cave-bat'].includes(data.kind)?8:2.2))*(i?-.28:.28);});
+    if(data.wings)data.wings.forEach((wing,i)=>{wing.rotation.z=Math.sin(time*(['pterodactyl','cave-bat','snowy-owl'].includes(data.kind)?8:2.2))*(i?-.28:.28);});
     if(data.arm)data.arm.rotation.x=this.bossThrowTime>0?Math.sin(this.bossThrowTime*6)*-.8:Math.sin(time*1.7)*.05;
     if(!['unicorn','witch','pterodactyl'].includes(data.kind))actor.rotation.z=Math.sin(time*1.8)*.012;
   }
@@ -209,7 +214,7 @@ export class MagicForest{
     this.camera.position.set(game.x,ride.y+game.jumpHeight+(game.bonus.active?0:bounce),ride.z);
     const giant=game.giant,nearGiant=giant&&!giant.done&&giant.visible;
     const proximity=nearGiant?THREE.MathUtils.clamp((game.distance-(GIANT.z-12))/(12-GIANT.stopDistance),0,1):0;
-    const lookTarget=nearGiant?(this.isCave?.20:.50)*proximity*Math.max(0,1-Math.abs(giant.x)/28):0;
+    const lookTarget=nearGiant?((this.isCave||this.isIce)?.20:.50)*proximity*Math.max(0,1-Math.abs(giant.x)/28):0;
     this.giantLook=THREE.MathUtils.lerp(this.giantLook,lookTarget,1-Math.exp(-4*dt));
     this.giantQuake=Math.max(0,this.giantQuake-(this.giantQuakeFresh?0:dt));this.giantQuakeFresh=false;this.shake=this.reducedMotion?0:this.giantQuake;
     this.camera.position.x+=Math.sin(time*43)*this.shake*.15;this.camera.position.y+=Math.cos(time*47)*this.shake*.16;
@@ -221,6 +226,7 @@ export class MagicForest{
       this.caveWorld.update(game,time,dt);const daylight=game.boss.done?THREE.MathUtils.clamp((game.distance-382)/12,0,1):0;
       this.scene.background.setHex(0x263e4e).lerp(new THREE.Color(0xb9e2df),daylight);this.scene.fog.color.copy(this.scene.background);this.scene.fog.density=.012*(1-daylight)+.006*daylight;this.ambient.intensity=1.3+daylight*.8;this.sun.intensity=.95+daylight*1.3;
     }
+    if(this.winterWorld)this.winterWorld.update(game,time,dt);
     if(this.horseId!==game.horseId)this.selectHorse(game.horseId);
     this.mount.position.y=-.8+(moving&&!this.reducedMotion?Math.sin(gait+.5)*.025:0);this.mount.rotation.z=moving&&!this.reducedMotion?Math.sin(gait*.5)*.013:0;
     this.mount.userData.hooves.forEach(hoof=>{hoof.visible=game.jumpHeight>.25;hoof.position.y=-.46+game.jumpHeight*.12;});this.updateHead(game.jumpTime,time);
@@ -234,6 +240,7 @@ export class MagicForest{
     }
     game.objects.forEach((object,i)=>{
       const mesh=this.objectMeshes[i];mesh.visible=mesh.userData.lava?Math.abs(object.z-game.distance)<165:!object.done&&object.z>game.distance-4&&object.z<game.distance+115&&(!game.bonus.active||object.type==='rainbow');
+      if(this.isIce&&object.type==='boss')(mesh.userData.crystalSegments||[]).forEach((segment,i)=>{segment.material.emissiveIntensity=i<(3-object.hp)?.95:.10;});
       if(this.isCave&&object.type==='boss'){
         mesh.visible=object.z>game.distance-18&&object.z<game.distance+115&&!game.bonus.active;
         mesh.position.x=THREE.MathUtils.lerp(mesh.position.x,object.done?4.5:object.x,1-Math.exp(-4*dt));
@@ -250,7 +257,7 @@ export class MagicForest{
     if(this.giantActor){
       this.giantActor.visible=!!nearGiant;
       if(nearGiant){
-        const actor=this.giantActor;actor.position.set(giant.x,(this.isCave?0:terrainHeightAt(giant.x,-giant.z))+.07+(giant.walking?Math.abs(Math.sin(giant.gait))*.075:0),-giant.z);actor.rotation.y=Math.PI/2;
+        const actor=this.giantActor;actor.position.set(giant.x,((this.isCave||this.isIce)?0:terrainHeightAt(giant.x,-giant.z))+.07+(giant.walking?Math.abs(Math.sin(giant.gait))*.075:0),-giant.z);actor.rotation.y=Math.PI/2;
         this.animate(actor,giant.elapsed,giant.gait);actor.updateWorldMatrix(true,true);
         const head=actor.userData.head,headPosition=head.getWorldPosition(new THREE.Vector3());
         const facing=Math.atan2(this.camera.position.x-headPosition.x,this.camera.position.z-headPosition.z)-Math.PI/2;

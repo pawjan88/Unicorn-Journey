@@ -2,10 +2,11 @@
   "name": "unicorn-journey",
   "private": true,
   "type": "module",
-  "description": "Unicorn Journey — przygoda jednorożca w magicznym lesie i świecie dinozaurów",
+  "description": "Unicorn Journey — cztery przygody jednorożca: las, dinozaury, jaskinie i Kraina Lodu",
   "scripts": {
     "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "test:browser": "node scripts/playtest.cjs",
+    "test:winter": "node scripts/playtest.cjs --winter",
     "test:cave": "node scripts/playtest.cjs --cave",
     "test:landing": "node scripts/playtest.cjs --rainbow-landing",
     "preview": "python3 -m http.server 8080 --bind 0.0.0.0 --directory dist"

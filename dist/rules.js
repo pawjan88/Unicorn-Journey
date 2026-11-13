@@ -1,5 +1,5 @@
-import { HORSES } from './characters.js?v=12';
-import { EPISODES } from './episodes.js?v=16';
+import { HORSES } from './characters.js?v=17';
+import { EPISODES } from './episodes.js?v=17';
 import { GIANT,giantPose } from './giant-encounter.js?v=14';
 export const RULES = Object.freeze({
   length:396, speed:4, halfWidth:2.1, riderRadius:.35, steerSpeed:2.45,
@@ -65,8 +65,21 @@ export class Adventure {
       }
       this.boss.species='obsidian-guardian';
     }
+    if(this.episodeId==='ice'){
+      this.herds.forEach(herd=>{herd.type='reindeer';herd.species='reindeer';});
+      this.witches.forEach(herd=>{herd.type='owl';});
+      let obstacleIndex=0;
+      for(const object of this.objects){
+        if(object.type==='fence')object.obstacle=obstacleIndex++%2?'snow-log':'ice-crack';
+        if(object.type==='troll')object.species='snow-imp';
+        if(object.type==='dragon')object.species='ice-dragon';
+        if(object.type==='rainbow')object.species='gold-snowflake';
+      }
+      this.boss.species='frost-king';
+    }
+    this.rescue=this.episodeId==='ice'?{freed:false,names:['Elza','Anna']}:null;
     this.rocks=[];this.rockId=0;this.bossRollClock=0;
-    this.giant=this.episodeId!=='forest'?{type:this.episodeId==='cave'?'crystal-turtle':'giganotosaurus',z:GIANT.z,elapsed:-1,done:false,roared:false,lastStep:-1,...giantPose(-1)}:null;
+    this.giant=this.episodeId!=='forest'?{type:this.episodeId==='ice'?'mammoth':this.episodeId==='cave'?'crystal-turtle':'giganotosaurus',z:GIANT.z,elapsed:-1,done:false,roared:false,lastStep:-1,...giantPose(-1)}:null;
   }
   selectEpisode(id) {
     if(!EPISODES[id]||!['intro','finished'].includes(this.mode))return false;
@@ -92,7 +105,10 @@ export class Adventure {
       &&Math.abs(o.x-this.x)<=(o.type==='boss'?1.9:RULES.shotHalfWidth))
       .sort((a,b)=>a.z-b.z||Math.abs(a.x-this.x)-Math.abs(b.x-this.x))[0];
     if(target){
-      if(target.type==='boss'){target.hp--;target.done=target.hp===0;target.destroyed=target.done;if(target.done)target.active=false;}
+      if(target.type==='boss'){
+        target.hp--;target.done=target.hp===0;target.destroyed=target.done;
+        if(target.done){target.active=false;if(this.rescue&&!this.rescue.freed){this.rescue.freed=true;this.onEvent({type:'rescue',names:this.rescue.names});}}
+      }
       else {target.done=true;target.destroyed=true;}
     }
     this.onEvent({type:'shot',target:target||null,

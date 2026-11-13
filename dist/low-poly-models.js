@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.js';
-import { HORSES } from './characters.js?v=12';
+import { HORSES } from './characters.js?v=17';
+import {crystallizeHorse} from './ice-horse.js?v=17';
 import {riverMeander,riverHeightAt,terrainHeightAt} from './environment-profile.js?v=14';
 
 export const RAINBOW=[0xf28b95,0xf3ac6d,0xf4d77d,0x8fc8ab,0x7ab6d2,0xb39cce];
@@ -96,7 +97,7 @@ export class LowPolyAssets{
     const tail=new THREE.Group();tail.position.set(0,1.13,-.65);pony.add(tail);
     for(let i=0;i<5;i++)this.segment(tail,[(i-2)*.045,0,0],[(i-2)*.06,-.4,-.35],.065,RAINBOW[i],'taper');
     this.shadow(pony,.75);
-    pony.userData={kind:'unicorn',legs,head,tail,horseId:horse.id,hornTip:head.userData.hornTip};return pony;
+    pony.userData={kind:'unicorn',legs,head,tail,horseId:horse.id,hornTip:head.userData.hornTip};return crystallizeHorse(this,pony,horse);
   }
   rider(horse=HORSES[0]){
     const rider=new THREE.Group();rider.name='rider-unicorn-'+horse.id;
@@ -105,7 +106,7 @@ export class LowPolyAssets{
     const head=this.unicornHead(horse);head.position.y=.18;head.scale.setScalar(.8);rider.add(head);
     const hooves=[-1,1].map(side=>{const hoof=this.mesh(rider,'box',horse.hooves,side*.40,-.48,.38,.19,.18,.27);hoof.visible=false;return hoof;});
     rider.traverse(object=>{if(object.isMesh){object.castShadow=false;object.receiveShadow=false;}});
-    rider.userData={kind:'rider',head,hooves,hornTip:head.userData.hornTip,horseId:horse.id};return rider;
+    rider.userData={kind:'rider',head,hooves,hornTip:head.userData.hornTip,horseId:horse.id};return crystallizeHorse(this,rider,horse);
   }
   troll(weapon='sword',boss=false){
     const root=new THREE.Group();root.name=boss?'armored-troll-boss':'armored-troll';

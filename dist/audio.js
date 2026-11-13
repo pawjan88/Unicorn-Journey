@@ -21,6 +21,12 @@ const FILES = {
   'cave-lizards':'cave-lizards.mp3',
   'cave-turtle':'cave-turtle.mp3',
   'cave-crystal':'cave-crystal.mp3',
+  'winter-ambient':'winter-ambient.mp3',
+  'winter-snow':'winter-snow.mp3',
+  'winter-ice':'winter-ice.mp3',
+  'winter-wings':'winter-wings.mp3',
+  'winter-herd':'winter-herd.mp3',
+  'winter-mammoth':'winter-mammoth.mp3',
 };
 export class AdventureAudio {
   constructor() {
@@ -34,6 +40,7 @@ export class AdventureAudio {
     this.musicTrack = 'forest-music';
     this.trackOffsets = new Map();
     this.hooves = null;
+    this.snow = null;
     this.neigh = null;
     this.witchLaugh = null;
     this.dinoCrossing = null;
@@ -103,8 +110,9 @@ export class AdventureAudio {
   }
   setMusicState(episodeId, bossActive=false) {
     this.episodeId=episodeId;
+    if(episodeId!=='ice')this.stopSnow();
     this.reverbGain?.gain.setTargetAtTime(this.playing&&episodeId==='cave'?.16:0,this.context.currentTime,.1);
-    const next=episodeId==='cave'?'cave-ambient':episodeId==='dino'?(bossActive?'dino-thunder':'dino-ambient'):'forest-music';
+    const next=episodeId==='ice'?'winter-ambient':episodeId==='cave'?'cave-ambient':episodeId==='dino'?(bossActive?'dino-thunder':'dino-ambient'):'forest-music';
     if(next===this.musicTrack)return;
     this.stopMusic();this.trackOffsets.set(this.musicTrack,this.musicOffset);
     this.musicTrack=next;this.musicOffset=this.trackOffsets.get(next)||0;
@@ -139,6 +147,7 @@ export class AdventureAudio {
     if (!this.enabled || !this.context || this.context.state !== 'running') return;
     const requested=name;
     if(this.episodeId==='cave')name=({bump:'cave-rock',collect:'cave-crystal','magic-shot':'cave-steam'})[name]||name;
+    if(this.episodeId==='ice')name=({bump:'winter-ice',collect:'cave-crystal','magic-shot':'cave-steam'})[name]||name;
     const buffer = this.buffers.get(name);
     if (!buffer) return;
     if(this.effects.size>=12){const oldest=this.effects.values().next().value;this.effects.delete(oldest);try{oldest.stop();}catch{}oldest.disconnect();}
@@ -149,11 +158,12 @@ export class AdventureAudio {
     source.buffer = buffer; source.playbackRate.value = rate; gain.gain.value = volume;
     source.connect(gain).connect(this.effectsGain); this.effects.add(source);
     source.onended = () => { this.effects.delete(source); if (this.neigh === source) this.neigh = null; source.disconnect(); gain.disconnect(); };
-    if(this.episodeId==='cave'&&requested==='magic-shot'){
+    if(['cave','ice'].includes(this.episodeId)&&requested==='magic-shot'){
       gain.gain.setTargetAtTime(0,this.context.currentTime+.25,.08);source.start(0,0,.6);
     }else source.start();
   }
   startHooves() {
+    this.startSnow();
     if (this.hooves || !this.playing || !this.enabled || !this.context || this.context.state !== 'running') return;
     const buffer = this.buffers.get('hoof-loop');
     if (!buffer) return;
@@ -167,12 +177,21 @@ export class AdventureAudio {
     source.start();
   }
   stopHooves() {
+    this.stopSnow();
     if (!this.hooves) return;
     const source = this.hooves;
     this.hooves = null;
     try { source.stop(); } catch {}
     source.disconnect();
   }
+  startSnow(){
+    if(this.snow||this.episodeId!=='ice'||!this.playing||!this.enabled||!this.context||this.context.state!=='running')return;
+    const buffer=this.buffers.get('winter-snow');if(!buffer)return;
+    const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;source.loop=true;gain.gain.value=.17;
+    source.connect(gain).connect(this.effectsGain);this.snow=source;
+    source.onended=()=>{if(this.snow===source)this.snow=null;source.disconnect();gain.disconnect();};source.start();
+  }
+  stopSnow(){if(!this.snow)return;const source=this.snow;this.snow=null;try{source.stop();}catch{}source.disconnect();}
   updateWitches(crossing) {
     if (!crossing || crossing.type !== 'witch' || crossing.elapsed < 0 || crossing.cleared || !this.playing || !this.enabled || !this.context || this.context.state !== 'running') {
       this.stopWitches(); return;
@@ -194,7 +213,7 @@ export class AdventureAudio {
     source.disconnect();
   }
   updateDinoCrossing(crossing) {
-    const name=({dinosaur:'dino-call',pterodactyl:'ptero-call',lizard:'cave-lizards',bat:'cave-bats',steam:'cave-steam'})[crossing?.type]||null;
+    const name=({dinosaur:'dino-call',pterodactyl:'ptero-call',lizard:'cave-lizards',bat:'cave-bats',steam:'cave-steam',reindeer:'winter-herd',owl:'winter-wings'})[crossing?.type]||null;
     if(!name||crossing.elapsed<0||crossing.cleared||!this.playing||!this.enabled||!this.context||this.context.state!=='running'){this.stopDinoCrossing();return;}
     if(this.dinoCrossing&&this.crossingTrack!==name)this.stopDinoCrossing();
     if(this.dinoCrossing)return;
@@ -207,7 +226,7 @@ export class AdventureAudio {
   updateGiant(giant){
     if(!giant||giant.done||giant.elapsed<GIANT.roarAt||giant.elapsed>=GIANT.roarEnd||!this.playing||!this.enabled||!this.context||this.context.state!=='running'){this.stopGiant();return;}
     if(this.giantRoar||this.giantRoarFinished)return;
-    const buffer=this.buffers.get(giant.type==='crystal-turtle'?'cave-turtle':'giant-roar'),offset=giant.elapsed-GIANT.roarAt;
+    const buffer=this.buffers.get(giant.type==='mammoth'?'winter-mammoth':giant.type==='crystal-turtle'?'cave-turtle':'giant-roar'),offset=giant.elapsed-GIANT.roarAt;
     if(!buffer)return;if(offset>=buffer.duration){this.giantRoarFinished=true;return;}
     const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=buffer;gain.gain.value=.62;
     source.connect(gain).connect(this.effectsGain);this.giantRoar=source;this.giantRoarGain=gain;

@@ -24,6 +24,15 @@ export const EPISODES = Object.freeze({
     scene:'✧ WIDOK Z SIODŁA · KRYSZTAŁOWE SERCE WULKANU', bossName:'Obsydianowy Strażnik',
     bossHint:'Omijaj kamienie i traf strażnika trzy razy — Ctrl.', obstacleHint:'Przeskakuj szczeliny i kamienne kolumny', enemyHint:'Omijaj golemy i kryształowe kraby', shotHint:'Obsydianowy Strażnik: 3 trafienia',
     endText:'Kryształowe Serce znów świeci! Czeka na Ciebie słoneczna polana.', bonusName:'Tęczowy Most nad Jeziorem',
-    environment:'cave', landmark:'crystal-heart', fog:0x263e4e,
+    environment:'cave', landmark:'crystal-heart', fog:0x263e4e, next:'ice',
+  }),
+  ice: Object.freeze({
+    id:'ice', name:'Kraina Lodu', edition:'ZAGINIONA ZORZA • PRZYGODA 04',
+    title:'Jednorożec w <em>Krainie Lodu</em>', subtitle:'Przywróć kolory zorzy i uwolnij Elzę oraz Annę.',
+    intro:'Zbieraj złote śnieżynki i dotrzyj do Lodowego Zamku.', icon:'❄️', pickupLabel:'ZEBRANE ŚNIEŻYNKI', pickupResult:'Zebrane śnieżynki', bonusUnit:'śnieżynek', total:50,
+    scene:'✧ WIDOK Z SIODŁA · KRAINA LODU', bossName:'Król Mrozu',
+    bossHint:'Omijaj śnieżne kule i traf króla trzy razy — Ctrl.', obstacleHint:'Przeskakuj szczeliny i ośnieżone drzewa', enemyHint:'Omijaj śnieżne chochliki i lodowe smoki', shotHint:'Król Mrozu: 3 trafienia',
+    endText:'Elza i Anna są wolne! Zorza znów rozświetla Krainę Lodu.', bonusName:'Galop pod Zorzą',
+    environment:'ice', landmark:'ice-castle', fog:0xd7e8f0,
   }),
 });

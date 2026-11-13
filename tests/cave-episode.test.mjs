@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {Adventure,RULES} from '../dist/rules.js';
 import {EPISODES} from '../dist/episodes.js';
 
-assert.equal(EPISODES.dino.next,'cave');assert.equal(EPISODES.cave.next,undefined);
+assert.equal(EPISODES.dino.next,'cave');assert.equal(EPISODES.cave.next,'ice');
 const events=[],game=new Adventure(event=>events.push(event));game.selectHorse('rose');game.selectEpisode('cave');game.start();
 assert.equal(game.horseId,'rose');assert.equal(game.objects.filter(object=>object.type==='rainbow').length,50);
 assert(game.objects.filter(object=>object.type==='rainbow').every(object=>object.species==='crystal'));

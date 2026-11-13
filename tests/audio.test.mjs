@@ -17,7 +17,7 @@ globalThis.fetch=async url=>{requests.push(String(url));return {ok:true,arrayBuf
 const audio=new AdventureAudio();
 assert.equal(audio.enabled,true);assert.equal(audio.context,null,'no autoplay context before gesture');
 audio.setPlaying(true);assert.equal(audio.music,null);
-audio.unlock();await audio.ready;assert(audio.music?.started);assert(audio.music.loop);assert.equal(audio.buffers.size,20);
+audio.unlock();await audio.ready;assert(audio.music?.started);assert(audio.music.loop);assert.equal(audio.buffers.size,26);
 assert(requests.some(url=>url.endsWith('/audio/step_konia_3s.mp3')));assert(requests.some(url=>url.endsWith('/audio/rzenie_konia_3s.mp3')),'supplied files are loaded');
 const originalMusic=audio.music;audio.startMusic();assert.equal(audio.music,originalMusic,'one music loop');
 let count=audio.effects.size;audio.update(.1,true,true);assert(audio.hooves?.started,'recorded hooves when moving on ground');assert(audio.hooves.loop);assert.equal(audio.hooves.buffer,audio.buffers.get('hoof-loop'));assert.equal(audio.hooves.playbackRate.value,1,'recording keeps original speed');
@@ -58,6 +58,10 @@ audio.setMusicState('cave');audio.setPlaying(true);assert.equal(audio.music.buff
 for(const [type,name]of [['lizard','cave-lizards'],['bat','cave-bats'],['steam','cave-steam']]){audio.update(.016,false,true,{type,elapsed:.8,cleared:false});assert.equal(audio.dinoCrossing.buffer,audio.buffers.get(name));assert.equal(audio.crossingTrack,name);}
 audio.setPlaying(false);assert.equal(audio.dinoCrossing,null);audio.setPlaying(true);audio.update(.016,false,true,null,{type:'crystal-turtle',elapsed:6,done:false});assert.equal(audio.giantRoar.buffer,audio.buffers.get('cave-turtle'),'turtle uses gentle animal breath');audio.stopGiant();
 audio.effect('bump');assert.equal([...audio.effects].at(-1).buffer,audio.buffers.get('cave-rock'));audio.effect('collect');assert.equal([...audio.effects].at(-1).buffer,audio.buffers.get('cave-crystal'));audio.effect('magic-shot');assert.equal([...audio.effects].at(-1).buffer,audio.buffers.get('cave-steam'),'cave magic uses a natural air swish');audio.reset();
+audio.setMusicState('ice');audio.setPlaying(true);assert.equal(audio.music.buffer,audio.buffers.get('winter-ambient'));
+audio.update(.016,true,true);assert(audio.hooves&&audio.snow);const crunch=audio.snow;audio.update(.016,true,true);assert.equal(audio.snow,crunch,'only one snow layer under supplied hoof recording');audio.update(.016,false,true);assert.equal(audio.snow,null);assert(crunch.stopped);audio.update(.016,true,false);assert.equal(audio.snow,null,'no snow crunch while airborne');
+audio.update(.016,false,true,{type:'reindeer',elapsed:.8,cleared:false});assert.equal(audio.dinoCrossing.buffer,audio.buffers.get('winter-herd'));audio.update(.016,false,true,{type:'owl',elapsed:1,cleared:false});assert.equal(audio.dinoCrossing.buffer,audio.buffers.get('winter-wings'));audio.update(.016,false,true,null,{type:'mammoth',elapsed:6,done:false});assert.equal(audio.giantRoar.buffer,audio.buffers.get('winter-mammoth'));
+audio.setEnabled(false);assert.equal(audio.snow,null);assert.equal(audio.dinoCrossing,null);assert.equal(audio.giantRoar,null);audio.setEnabled(true);audio.effect('bump');assert.equal([...audio.effects].at(-1).buffer,audio.buffers.get('winter-ice'));audio.reset();assert.equal(audio.snow,null);
 const failedFetch=globalThis.fetch;globalThis.fetch=async()=>{throw new Error('offline');};const silent=new AdventureAudio();silent.unlock();await silent.ready;assert.equal(silent.buffers.size,0,'missing audio cannot prevent game from loading');globalThis.fetch=failedFetch;
 const mix=new AdventureAudio();mix.setVolume('music',.4);mix.setVolume('effects',.6);mix.unlock();await mix.ready;mix.setPlaying(true);
 assert.equal(mix.musicGain.gain.value,.4);assert.equal(mix.effectsGain.gain.value,.6);

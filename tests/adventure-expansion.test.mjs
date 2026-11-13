@@ -10,8 +10,8 @@ function clearRoute({boss=true}={}){
  game.objects.forEach(o=>{if(o.type!=='boss'||boss)o.done=true;});
  [...game.herds,...game.witches].forEach(h=>h.cleared=true);game.bonus.finished=true;
 }
-assert.equal(HORSES.length,3);
-for(const key of ['coat','hooves','horn'])assert.equal(new Set(HORSES.map(h=>h[key])).size,3,`three distinct ${key} colors`);
+assert.equal(HORSES.length,4);
+for(const key of ['coat','hooves','horn'])assert.equal(new Set(HORSES.map(h=>h[key])).size,4,`four distinct ${key} colors`);
 for(const horse of HORSES){
  assert(game.selectHorse(horse.id));assert.equal(game.horseId,horse.id);
  const portrait=fs.readFileSync(new URL('../dist/assets/'+horse.portrait,import.meta.url));
