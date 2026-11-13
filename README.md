@@ -2,7 +2,9 @@
 
 Gra przeglądarkowa na komputer z klawiaturą. Wersja **low-poly 3D** przedstawia trzy połączone epizody: magiczny las, świat dinozaurów i kryształowe jaskinie. Modele koników, przeciwników i roślin są przestrzenną geometrią Three.js z płaskim cieniowaniem. Głowa w widoku z siodła jest zmniejszona o 20%, a podczas jazdy nie ma komunikatów tekstowych. Kamera w Galopie po Tęczy podąża za nachyleniem drogi i pokazuje zjazd bez przenikania pod powierzchnię. Menu i HUD korzystają z lokalnej czcionki Fredoka oraz zdjęć tych samych modeli, które występują w grze.
 
-Nowa szata jest udostępniana do testów w [prywatnym podglądzie](https://unicorn-journey-pixel-preview.paw-jan-88.chatgpt.site). Publikacja nowej wersji na GitHubie wymaga osobnej zgody właściciela. Publiczna wersja produkcyjna: [GitHub Pages](https://pawjan88.github.io/Unicorn-Journey/).
+**[Zagraj w przeglądarce](https://pawjan88.github.io/Unicorn-Journey/)** · [Repozytorium GitHub](https://github.com/pawjan88/Unicorn-Journey)
+
+Wersja z trzema epizodami została zatwierdzona po testach. [Prywatny podgląd](https://unicorn-journey-pixel-preview.paw-jan-88.chatgpt.site) pozostaje dostępny do kolejnych testów. Następne zmiany publikujemy po zatwierdzeniu właściciela.
 
 ## Sterowanie
 
@@ -71,4 +73,4 @@ node scripts/render-cave-preview.cjs
 
 Otoczenie jest grupowane w `InstancedMesh`, geometria jest współdzielona, cienie mają ograniczony obszar, a rozdzielczość adaptuje się do wolniejszego renderowania. Zamiana epizodu zwalnia zasoby poprzedniej sceny. Utrata kontekstu WebGL wstrzymuje grę; po przywróceniu można kontynuować.
 
-GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/crystal-caverns` do akceptacji.
+GitHub Actions uruchamia testy i publikuje `dist/` w GitHub Pages po zmianie na `main`.

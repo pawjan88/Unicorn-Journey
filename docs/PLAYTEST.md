@@ -1,6 +1,6 @@
 # Unicorn Journey — trzy epizody low-poly 3D: raport testów
 
-Wersja do prywatnych testów właściciela. Nowa wersja nie jest publikowana na GitHubie.
+Wersja z trzema epizodami przeszła testy i została zatwierdzona przez właściciela do publikacji na GitHubie. Gra: https://pawjan88.github.io/Unicorn-Journey/.
 
 ## Zakres
 
