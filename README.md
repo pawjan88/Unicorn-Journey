@@ -21,7 +21,7 @@ Na starcie wybiera się jeden z trzech koników o innych kolorach maści, kopyt 
 
 Lasy w obu światach sięgają szeroko poza pobocza i ponad 600 metrów w głąb sceny. Rośliny i podłoże mają delikatne tekstury. Zakręcające rzeki lawy przepływają przez dżunglę po obu stronach drogi; powierzchnia oraz jasne smugi płyną w czasie gry. Tęczowy promień nie rzuca cienia. Opcja ograniczonego ruchu w przeglądarce wyłącza drżenie kamery.
 
-W obu epizodach zachowano osiem sekund Galopu po Tęczy ponad lasem, pięć dodatkowych skarbów oraz wzgórza z zamkiem. Nie ma utraty żyć ani wymogu zebrania wszystkich przedmiotów. Na mecie wybucha konfetti.
+W obu epizodach zachowano osiem sekund Galopu po Tęczy ponad lasem, pięć dodatkowych skarbów oraz wzgórza z zamkiem. Nie ma utraty żyć ani wymogu zebrania wszystkich przedmiotów. Na mecie wybucha konfetti. Po zjeździe z tęczy pierwsza para przeciwników czeka 16 metrów dalej, co daje około czterech sekund jazdy na reakcję w obu epizodach.
 
 ## Uruchomienie
 
@@ -40,6 +40,7 @@ npm test
 npm ci
 npx playwright install chromium
 npm run test:browser
+npm run test:landing
 ```
 
 `CHROMIUM_PATH` pozwala użyć zainstalowanego Chromium. Testy przeglądarkowe zapisują raport i zrzuty w `artifacts/playtest/`. Używają rzeczywistych klawiszy oraz Web Audio, a lokalne punkty kontrolne przyspieszają sprawdzenie przeszkód, lotu, bossów i mety. Pełne przejazdy obu epizodów sprawdzają osobne testy reguł. Narzędzia QA działają wyłącznie na `localhost` / `127.0.0.1` z parametrem `?qa=1`.
@@ -65,4 +66,4 @@ node scripts/render-previews.cjs
 
 Otoczenie jest grupowane w `InstancedMesh`, geometria jest współdzielona, cienie mają ograniczony obszar, a rozdzielczość adaptuje się do wolniejszego renderowania. Zamiana epizodu zwalnia zasoby poprzedniej sceny. Utrata kontekstu WebGL wstrzymuje grę; po przywróceniu można kontynuować.
 
-GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/deep-forest-and-giant` do akceptacji.
+GitHub Actions publikuje `dist/` po zmianie na `main`; obecne prace pozostają na lokalnej gałęzi `refresh/rainbow-landing-space` do akceptacji.

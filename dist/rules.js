@@ -6,7 +6,7 @@ export const RULES = Object.freeze({
   jumpDuration:1.1, jumpHeight:1.2, fenceClearance:.54,
   shotRange:20, shotHalfWidth:.85, shotCooldown:.45,
   fenceStopDistance:.65, herdTriggerDistance:11, herdStopDistance:2.4, herdDuration:6.2,
-  pairGap:5.2, bonusStart:194, bonusEnd:226, bonusDuration:8, bonusHeight:15,
+  pairGap:5.2, bonusStart:194, bonusEnd:226, bonusDuration:8, bonusHeight:15, landingEnemyGap:16,
   bossZ:386, bossWakeDistance:373, bossStopDistance:4, rockSpeed:9, rockInterval:1.25,
 });
 export function skyHeightAt(distance) {
@@ -30,6 +30,8 @@ export class Adventure {
     const paired=[0,2,4,10,12];
     for(let i=0;i<16;i++) {
       const object={type:i%2?'troll':'fence',weapon:i%4===1?'sword':'axe',z:(37.5+i*27.75)*.8,x:i%2?(i%3===0?0:1.12):0,done:false};
+      // Leave time to recover the ground view before the next enemy encounter.
+      if(object.type==='troll'&&object.z>=RULES.bonusEnd)object.z=Math.max(object.z,RULES.bonusEnd+RULES.landingEnemyGap);
       const pair=paired.indexOf(i);
       if(pair>=0){object.pair=pair+1;this.objects.push({...object,z:object.z+RULES.pairGap,pair:pair+1});}
       this.objects.push(object);

@@ -1,4 +1,4 @@
-import { Adventure, RULES } from './rules.js?v=14';
+import { Adventure, RULES } from './rules.js?v=15';
 import { AdventureAudio } from './audio.js?v=14';
 import { EPISODES } from './episodes.js?v=12';
 import { HORSES } from './characters.js?v=12';
@@ -205,7 +205,7 @@ function frame(timestamp) {
   confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=14').then(async ({ MagicForest }) => {
+import('./forest.js?v=15').then(async ({ MagicForest }) => {
   await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });

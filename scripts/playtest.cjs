@@ -4,7 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const http=require('node:http');
 const root=path.resolve(__dirname,'../dist');
-const output=path.resolve(process.env.PLAYTEST_OUTPUT||'artifacts/playtest');
+const landingOnly=process.argv.includes('--rainbow-landing');
+const output=path.resolve(process.env.PLAYTEST_OUTPUT||(landingOnly?'artifacts/landing-playtest':'artifacts/playtest'));
 fs.mkdirSync(output,{recursive:true});
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.mp3':'audio/mpeg','.ttf':'font/ttf','.png':'image/png'};
 const server=http.createServer((req,res)=>{
@@ -31,6 +32,24 @@ async function run(){
   async function check(name,action){try{await action();report.checks.push(name);console.log('PASS:',name);}catch(error){report.failedState=await state();await shot('FAILED');throw error;}}
   await page.goto(base+'/?qa=1');
   await page.locator('#play:not([disabled])').waitFor({timeout:60000});
+  if(landingOnly){
+    for(const episode of ['forest','dino']){
+      if((await state()).mode==='playing'){await page.keyboard.press('Escape');await page.click('#back-menu');}
+      await page.click('#episode-'+episode);await page.click('#play');
+      await check(episode+': complete rainbow descent and five bonus pickups',async()=>{
+        await checkpoint(193.8);await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().bonus);await page.keyboard.up('ArrowUp');
+        await wait(()=>!window.__unicornQA.snapshot().bonus);
+        const landed=await state();assert.equal(landed.distance,226);assert.equal(landed.bonusCount,5);assert.equal(landed.jumpHeight,0);assert(landed.view.clearance>1.4);await noCaptions();await shot(episode+'-landing');
+      });
+      await check(episode+': three seconds of clear travel, then shoot the relocated enemy',async()=>{
+        const enemies=(await state()).enemiesRemaining;
+        await page.keyboard.down('ArrowUp');await wait(()=>window.__unicornQA.snapshot().distance>=238);await page.keyboard.up('ArrowUp');
+        assert.equal((await state()).enemiesRemaining,enemies,'no surprise enemy collision after landing');await shot(episode+'-after-three-seconds');
+        await page.keyboard.press('Control');await wait(before=>window.__unicornQA.snapshot().enemiesRemaining===before-1,enemies);await shot(episode+'-magic-hit');
+      });
+    }
+    assert.deepEqual(report.errors,[],'no browser errors or failed assets');report.result='passed';report.finishedAt=new Date().toISOString();return;
+  }
   await check('First actionable menu, local font, two episode cards and three horses',async()=>{
     assert.equal(await page.locator('.episode-option').count(),2);assert.equal(await page.locator('#horse-picker button').count(),3);
     assert(await page.evaluate(()=>document.fonts.check('16px Fredoka')));assert.equal((await state()).audio.state,undefined);

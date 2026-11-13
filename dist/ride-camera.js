@@ -1,4 +1,4 @@
-import { RULES, skyHeightAt } from './rules.js?v=14';
+import { RULES, skyHeightAt } from './rules.js?v=15';
 
 export const EYE_HEIGHT=2.05;
 export const FOLLOW_DISTANCE=1.7;

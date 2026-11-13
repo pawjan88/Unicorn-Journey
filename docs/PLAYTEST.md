@@ -2,6 +2,14 @@
 
 Status: gotowa wersja do testów właściciela, bez publikacji zmian na GitHubie.
 
+## Odstęp po zjeździe z tęczy
+
+- Pierwsza para przeciwników po tęczy została przesunięta z 229,8 m na 242 m trasy. Od końca tęczy (226 m) dzieli ją teraz 16 m, czyli cztery sekundy jazdy zamiast 0,95 s.
+- Zmiana obejmuje trolla i smoka w lesie oraz triceratopsa i diplodoka w dżungli. Obie postacie w parze pozostają obok siebie, przed kolejną parą przeszkód.
+- `npm test`: 12 zestawów, 0 niepowodzeń; obejmuje pełne przejazdy obu epizodów i regresję bezpiecznego zjazdu, działania strzału oraz ponownego rozpoczęcia.
+- `npm run test:landing`: 4 scenariusze w Chromium, 6 zrzutów. Sprawdza pełny przejazd po tęczy, pięć bonusowych przedmiotów, trzy sekundy jazdy bez zderzenia po lądowaniu i trafienie odsuniętego przeciwnika w każdym epizodzie.
+- Bieżący raport i zrzuty: `artifacts/landing-playtest/`.
+
 ## Aktualne rozszerzenie świata
 
 - Dodano ponad 1300 drzew w głębi każdego świata, do 100 metrów na boki i ponad 600 metrów w głąb. Tło jest grupowane w mniej niż 15 dodatkowych partii instancji. Zagęszczono także drzewa i roślinność na bliższych planach. Korony, liście i podłoże mają proceduralne tekstury zachowujące styl low-poly.
@@ -29,7 +37,7 @@ Status: gotowa wersja do testów właściciela, bez publikacji zmian na GitHubie
 - Przy niskiej liczbie klatek krótki impuls drżenia mógł wygasnąć jeszcze przed rysowaniem. Nowy impuls jest wyświetlany przynajmniej przez jedną klatkę. Drżenie nie sumuje obrotu kamery, więc pauza nie powoduje jej dryfowania.
 - Poprzednie ilustracje i moduł pixel art usunięto z dystrybucji.
 
-## Weryfikacja
+## Ostatni pełny przegląd przed zmianą odstępu
 
 - `npm test`: 11 zestawów, 0 niepowodzeń. Obejmuje reguły i pełne przejazdy obu epizodów, wejście, audio, animację, wybory, przejścia oraz budowę modeli 3D i ich palety.
 - `npm run test:browser`: 23 scenariusze, 0 niepowodzeń; 27 zrzutów ekranu.

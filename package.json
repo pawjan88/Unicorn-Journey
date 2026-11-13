@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --experimental-vm-modules --test tests/*.test.mjs",
     "test:browser": "node scripts/playtest.cjs",
+    "test:landing": "node scripts/playtest.cjs --rainbow-landing",
     "preview": "python3 -m http.server 8080 --bind 0.0.0.0 --directory dist"
   },
   "devDependencies": {

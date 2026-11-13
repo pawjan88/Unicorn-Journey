@@ -1,9 +1,9 @@
 import * as THREE from './vendor/three.module.js';
-import { RULES, skyHeightAt } from './rules.js?v=14';
+import { RULES, skyHeightAt } from './rules.js?v=15';
 import { HORSES } from './characters.js?v=12';
 import { jumpHeadPose } from './animation.js?v=12';
 import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=14';
-import { riderCameraPose } from './ride-camera.js?v=14';
+import { riderCameraPose } from './ride-camera.js?v=15';
 import {GIANT} from './giant-encounter.js?v=14';
 import {terrainHeightAt,riverMeander,riverHeightAt} from './environment-profile.js?v=14';
 
