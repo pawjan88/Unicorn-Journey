@@ -282,6 +282,7 @@ export class MagicForest{
   }
   dispose(){
     this.resizeObserver.disconnect();const geometries=new Set(Object.values(this.assets.geometries)),materials=new Set(this.assets.materials.values()),textures=new Set([this.glow,this.lightProbe]);
+    if(this.scene.background?.isTexture)textures.add(this.scene.background);
     this.scene.traverse(object=>{object.shadow?.map?.dispose();if(object.geometry)geometries.add(object.geometry);for(const mat of(Array.isArray(object.material)?object.material:[object.material]))if(mat){materials.add(mat);for(const value of Object.values(mat))if(value?.isTexture)textures.add(value);}});
     geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());textures.forEach(texture=>texture.dispose());this.renderer.dispose();
   }

@@ -23,8 +23,12 @@ export function landscapeSurface(material,asset,x,y,strength=.65){
 }
 
 export function daylight(scene,outdoors){
-  const sky=new THREE.TextureLoader().load(new URL('sky.jpg',folder).href);
-  sky.mapping=THREE.EquirectangularReflectionMapping;sky.colorSpace=THREE.SRGBColorSpace;
-  if(outdoors){scene.background=sky;scene.backgroundIntensity=.84;}
-  return sky;
+  function panorama(file){
+    const texture=surfaceTexture(file);
+    texture.mapping=THREE.EquirectangularReflectionMapping;
+    texture.colorSpace=THREE.SRGBColorSpace;return texture;
+  }
+  if(outdoors){scene.background=panorama('sky.jpg');scene.backgroundIntensity=.84;}
+  // Specular convolution only needs a small copy of the panorama.
+  return panorama('skylight.jpg');
 }
