@@ -1,3 +1,5 @@
+import {mountain} from './organic-geometry.js';
+import {landscapeSurface} from './nature-surfaces.js';
 import * as THREE from './vendor/three.module.js';
 import {winterSister} from './winter-models.js?v=17';
 
@@ -29,41 +31,42 @@ export class WinterWorld{
     this.update({distance:0,boss:{hp:3,done:false},rescue:{freed:false}},0,0);
   }
   makeGround(){
-    const a=this.assets;this.snowTexture=winterTexture();this.snowTexture.repeat.set(27,80);
+    const a=this.assets;
     const geometry=new THREE.PlaneGeometry(250,650);geometry.rotateX(-Math.PI/2);geometry.translate(0,-.08,-210);a.geometries.winterSnowFloor=geometry;
-    const material=a.mat(0xdbe9ee,{name:'winter-snow-floor'});material.map=this.snowTexture;
+    const material=a.mat(0xdbe9ee,{name:'winter-snow-floor'});landscapeSurface(material,'snow_02',48,125,.46);
     const floor=new THREE.Mesh(geometry,material);floor.receiveShadow=true;this.root.add(floor);
-    this.path=a.mesh(this.root,'box',a.mat(0xb9d1da,{name:'winter-riding-path'}),0,-.055,-205,4.2,.11,470);this.path.castShadow=false;this.path.receiveShadow=true;
+    this.path=a.mesh(this.root,'box',a.mat(0xb9d1da,{name:'winter-riding-path'}),0,-.055,-205,4.2,.11,470);landscapeSurface(this.path.material,'snow_02',1,110,.34);this.path.castShadow=false;this.path.receiveShadow=true;
     const source=new THREE.Group(),random=seeded(54),stone=a.mat(0x87adbf,{name:'winter-path-markers'});
     for(let d=0;d<430;d+=2)for(const side of [-1,1])a.mesh(source,'rock',stone,side*2.37,.035,-d,.08+random()*.04,.05,.14);
     this.pathEdges=a.batch(source);this.pathEdges.name='winter-path-edges';this.pathEdges.children.forEach(mesh=>mesh.castShadow=false);this.root.add(this.pathEdges);
   }
   makeSky(){
     const a=this.assets;
-    const skyMaterial=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec3 direction;void main(){float y=pow(max(normalize(direction).y,0.0),.7);vec3 c=mix(vec3(.82,.90,.94),vec3(.42,.59,.75),y);gl_FragColor=vec4(c,1.0);}'});
-    const sky=new THREE.Mesh(new THREE.SphereGeometry(650,16,12),skyMaterial);sky.position.z=-200;sky.renderOrder=-1000;this.root.add(sky);a.geometries.winterSky=sky.geometry;
     this.aurora=new THREE.Group();this.aurora.name='restorable-northern-lights';this.root.add(this.aurora);this.auroraBands=[];
     for(let band=0;band<3;band++){
       const positions=[],colors=[],indices=[],color=new THREE.Color([0x55dfbc,0xbda1e9,0x7ccde5][band]);
       for(let i=0;i<=48;i++){
         const t=i/48,x=-130+t*260,y=43+band*7+Math.sin(t*Math.PI*2+band)*8,z=-150-band*20+Math.sin(t*Math.PI*3+band)*10;
-        positions.push(x,y,z,x,y+9+Math.sin(t*15+band)*3,z);colors.push(color.r,color.g,color.b,color.r,color.g,color.b);
-        if(i<48){const n=i*2;indices.push(n,n+2,n+1,n+1,n+2,n+3);}
+        const height=9+Math.sin(t*15+band)*3,glow=Math.sin(t*Math.PI)*(.7+.3*Math.cos(i*2.3+band));
+        for(const [level,alpha]of [[0,0],[.24,glow],[1,0]]){
+          positions.push(x,y+height*level,z);colors.push(color.r,color.g,color.b,alpha);
+        }
+        if(i<48)for(let row=0;row<2;row++){const n=i*3+row;indices.push(n,n+3,n+1,n+1,n+3,n+4);}
       }
-      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();a.geometries['winterAurora'+band]=geometry;
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,4));geometry.setIndex(indices);geometry.computeVertexNormals();a.geometries['winterAurora'+band]=geometry;
       const material=new THREE.MeshBasicMaterial({color:0xffffff,vertexColors:true,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false,blending:THREE.NormalBlending,toneMapped:false,fog:false});
       const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;this.aurora.add(mesh);this.auroraBands.push(mesh);
     }
-    const sun=a.mesh(this.root,'round',new THREE.MeshBasicMaterial({color:0xffefc5,fog:false}),-75,58,-430,7,7,2);sun.castShadow=false;
+
   }
   makeScenery(){
-    const a=this.assets,source=new THREE.Group(),random=seeded(725),trunk=a.mat(0x8d999f,{name:'snow-pine-trunk'}),needles=a.mat(0x688e99,{name:'snow-pine-blue-needles'}),snow=a.mat(0xe5f2f4,{name:'pine-snow-caps'}),ice=a.mat(0x91bacd,{name:'winter-glacier'});
+    const a=this.assets,source=new THREE.Group(),random=seeded(725),trunk=a.mat(0x8d999f,{name:'snow-pine-trunk'}),needles=a.mat(0x688e99,{name:'snow-pine-blue-needles',side:THREE.DoubleSide}),snow=a.mat(0xe5f2f4,{name:'pine-snow-caps',side:THREE.DoubleSide}),ice=a.mat(0x91bacd,{name:'winter-glacier'});
     const tree=(x,d,height)=>{
       a.mesh(source,'taper',trunk,x,height*.27,-d,.20,height*.54,.20);
       for(let layer=0;layer<3;layer++){
         const radius=(1.65-layer*.36)*height/7,y=height*.43+layer*height*.19,h=height*.45;
-        a.mesh(source,'cone',needles,x,y,-d,radius,h,radius);
-        a.mesh(source,'cone',snow,x,y+height*.055,-d,radius*.94,h*.91,radius*.94);
+        a.mesh(source,'spruce',needles,x,y,-d,radius,h,radius);
+        a.mesh(source,'spruce',snow,x,y+height*.055,-d,radius*.94,h*.91,radius*.94);
       }
       this.treeCount++;
     };
@@ -77,9 +80,10 @@ export class WinterWorld{
         const h=4+random()*6;a.mesh(source,'rock',ice,side*(7.5+random()*3),h*.43,-d,3.5,h,4.5);a.mesh(source,'rock',snow,side*9,h*.85,-d,2.6,.5,3.2);
       }
     }
-    const mountain=a.mat(0x8baac2,{name:'distant-ice-mountains',fog:false}),cap=a.mat(0xd9e8ef,{name:'distant-mountain-snow',fog:false});
-    for(const [x,d,h,r]of [[-80,120,78,45],[91,190,91,54],[-65,310,86,44],[75,380,82,48],[-70,530,100,52],[68,545,110,58],[0,590,84,55]]){
-      a.mesh(source,'cone',mountain,x,h*.5,-d,r,h,r*.75);a.mesh(source,'cone',cap,x,h*.83,-d,r*.36,h*.34,r*.27);
+    a.geometries.winterPeak=mountain();
+    const ridge=landscapeSurface(a.mat(0xffffff,{name:'alpine-ridge',vertexColors:true,fog:false}),'snow_02',6,4,.48);
+    for(const [x,d,h,r]of [[-100,120,78,45],[112,190,91,54],[-99,310,86,44],[110,380,82,48],[-70,530,100,82],[68,545,110,85],[0,590,84,75]]){
+      a.mesh(source,'winterPeak',ridge,x,h*.5,-d,r,h,r*.75).rotation.y=d*.37;
     }
     this.scenery=a.batch(source);this.scenery.name='batched-winter-forests-and-mountains';this.scenery.children.forEach(mesh=>{mesh.castShadow=false;mesh.receiveShadow=true;});this.root.add(this.scenery);
   }

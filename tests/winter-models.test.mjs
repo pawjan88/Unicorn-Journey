@@ -14,5 +14,5 @@ for(const [i,sister]of sisters.entries()){
  const cape=sister.getObjectByName(i?'anna-magenta-cape':'elsa-translucent-cape');assert(cape);if(!i)assert(cape.material.transparent&&cape.material.opacity<.7);
 }
 for(const kind of ['ice-crack','snow-log']){const obstacle=winterObstacle(a,kind,30),s=size(obstacle);assert(s.x>=4.3&&s.x<5.2);assert(s.y<.8);assert.equal(obstacle.userData.kind,kind);}
-for(const actor of [imp,dragon,king,deer,owl,big,...sisters])actor.traverse(mesh=>{if(mesh.isMesh){assert(mesh.geometry.attributes.normal);assert(mesh.material.flatShading);}});
+for(const actor of [imp,dragon,king,deer,owl,big,...sisters])actor.traverse(mesh=>{if(mesh.isMesh){assert(mesh.geometry.attributes.normal);assert.equal(mesh.material.flatShading,false);}});
 a.dispose();console.log('PASS: golden six-arm snowflake, friendly ice enemies, three crown charges, winter animals, huge mammoth, Elsa/Anna braid and outfit silhouettes, and jumpable snow obstacles');

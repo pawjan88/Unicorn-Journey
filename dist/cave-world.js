@@ -1,3 +1,4 @@
+import {landscapeSurface} from './nature-surfaces.js';
 import * as THREE from './vendor/three.module.js';
 
 const smooth=(a,b,value)=>{const t=THREE.MathUtils.clamp((value-a)/(b-a),0,1);return t*t*(3-2*t);};
@@ -6,14 +7,6 @@ export function caveCeilingAt(distance){return 14+22*smooth(130,175,distance)*(1
 export function caveWidthAt(distance){return 8.5+13*smooth(115,175,distance)*(1-smooth(334,372,distance));}
 export function caveSectionAt(distance){return distance<125?'volcanic-tunnels':distance<230?'mushroom-grotto':distance<340?'underground-lake':distance<388?'heart-chamber':'sunlit-clearing';}
 
-function stoneTexture(){
-  const random=seeded(292),size=64,data=new Uint8Array(size*size*4);
-  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-    const i=(y*size+x)*4,v=205+random()*38+Math.sin(x*.25+y*.13)*6;
-    data.set([v,v+2,v+5,255],i);
-  }
-  const texture=new THREE.DataTexture(data,size,size,THREE.RGBAFormat);texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;return texture;
-}
 function flowTexture(lava){
   const size=64,data=new Uint8Array(size*size*4),random=seeded(lava?918:143);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
@@ -44,12 +37,11 @@ export class CaveWorld{
     if(!a.geometries.caveSpire){
       const geometry=new THREE.CylinderGeometry(.05,1,1,6,1,false).toNonIndexed();geometry.translate(0,.5,0);a.geometries.caveSpire=geometry;
     }
-    this.stone=stoneTexture();
   }
   makeFloor(){
     const a=this.assets;
-    const floor=new THREE.Mesh(new THREE.PlaneGeometry(64,410,1,1),a.mat(0x7d797b,{name:'cave-floor'}));floor.geometry.rotateX(-Math.PI/2);floor.geometry.translate(0,-.07,-185);floor.material.map=this.stone;floor.material.map.repeat.set(10,70);floor.receiveShadow=true;this.root.add(floor);a.geometries.caveFloor=floor.geometry;
-    const pathMaterial=a.mat(0xd1b998,{name:'cave-path'});this.path=a.mesh(this.root,'box',pathMaterial,0,-.055,-190,4.2,.11,416);this.path.castShadow=false;this.path.receiveShadow=true;
+    const floor=new THREE.Mesh(new THREE.PlaneGeometry(64,410,1,1),a.mat(0x7d797b,{name:'cave-floor'}));floor.geometry.rotateX(-Math.PI/2);floor.geometry.translate(0,-.07,-185);landscapeSurface(floor.material,'rock_face_03',15,100);floor.receiveShadow=true;this.root.add(floor);a.geometries.caveFloor=floor.geometry;
+    const pathMaterial=a.mat(0xd1b998,{name:'cave-path'});this.path=a.mesh(this.root,'box',pathMaterial,0,-.055,-190,4.2,.11,416);landscapeSurface(pathMaterial,'dirt_floor',1,104);this.path.castShadow=false;this.path.receiveShadow=true;
   }
   makeVault(){
     const a=this.assets,random=seeded(183),positions=[],uv=[],colors=[];
@@ -70,7 +62,7 @@ export class CaveWorld{
       append(first.points[i+1],u+.25,v,color);append(next.points[i],u,vNext,color);append(next.points[i+1],u+.25,vNext,color);
     }
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();a.geometries.caveVault=geometry;
-    const material=a.mat(0xffffff,{name:'faceted-cave-vault',vertexColors:true,side:THREE.DoubleSide});material.map=this.stone;
+    const material=a.mat(0xffffff,{name:'faceted-cave-vault',vertexColors:true,side:THREE.DoubleSide});landscapeSurface(material,'rock_face_03',2,1,.8);
     this.vault=new THREE.Mesh(geometry,material);this.vault.receiveShadow=false;this.vault.castShadow=false;this.root.add(this.vault);
   }
   makeScenery(){

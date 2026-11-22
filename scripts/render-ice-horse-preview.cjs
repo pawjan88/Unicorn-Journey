@@ -18,7 +18,7 @@ const server=http.createServer((req,res)=>{
    renderer.setPixelRatio(1);renderer.setSize(480,280);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
    scene.background=new THREE.Color(0xe0eaf0);scene.add(new THREE.HemisphereLight(0xfff7e5,0x6b92ab,2.2));const sun=new THREE.DirectionalLight(0xfff8f0,3);sun.position.set(-4,9,6);scene.add(sun);
    scene.add(assets.unicorn(HORSES.find(horse=>horse.id==='ice')));assets.mesh(scene,'cylinder',0xb4ccdb,0,-.09,0,1.3,.18,1.2);
-   const camera=new THREE.PerspectiveCamera(35,480/280,.1,200);camera.position.set(3.3,2.4,4.7);camera.lookAt(0,1.1,0);renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();assets.dispose();return data;
+   const camera=new THREE.PerspectiveCamera(35,480/280,.1,200);camera.position.set(3.3,2.4,4.7);camera.lookAt(0,1.1,0);await assets.ready();renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();assets.dispose();return data;
   });
   fs.writeFileSync(path.join(root,'assets/unicorn-portrait-ice.png'),Buffer.from(data.split(',')[1],'base64'));console.log('Rendered: unicorn-portrait-ice.png');
  }finally{await browser.close();server.close();}

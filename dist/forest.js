@@ -1,3 +1,4 @@
+import {daylight,landscapeSurface} from './nature-surfaces.js';
 import * as THREE from './vendor/three.module.js';
 import { RULES, skyHeightAt } from './rules.js?v=17';
 import { HORSES } from './characters.js?v=17';
@@ -37,12 +38,6 @@ function glowTexture(){
   gradient.addColorStop(0,'#ffffff');gradient.addColorStop(.18,'#fff0b2');gradient.addColorStop(1,'#ffdd7800');ctx.fillStyle=gradient;ctx.fillRect(0,0,32,32);
   return new THREE.CanvasTexture(canvas);
 }
-function natureTexture(foliage=false){
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
-  const ctx=canvas.getContext('2d'),random=seeded(foliage?912:322);ctx.fillStyle=foliage?'#d6dcc5':'#d2dcb9';ctx.fillRect(0,0,128,128);
-  for(let i=0;i<260;i++){const x=random()*128,y=random()*128,size=2+random()*10;ctx.fillStyle=i%2?'#91ab7b':'#f0edcb';ctx.globalAlpha=.08+random()*.15;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+size,y-size*.3);ctx.lineTo(x+size*.7,y+size*.65);ctx.lineTo(x-size*.3,y+size*.4);ctx.fill();}
-  const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(foliage?2:18,foliage?2:70);tex.anisotropy=4;return tex;
-}
 function lavaTexture(){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const ctx=canvas.getContext('2d'),random=seeded(491);
   ctx.fillStyle='#e47d30';ctx.fillRect(0,0,256,256);
@@ -60,13 +55,15 @@ export class MagicForest{
     this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.shadowMap.autoUpdate=false;this.renderer.shadowMap.needsUpdate=true;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(this.isIce?0xd7e8f0:this.isCave?0x263e4e:this.isDino?0xd4e2cc:0xe0eadb);
     this.scene.fog=new THREE.FogExp2(this.scene.background,this.isCave?.012:this.isDino?.0058:.0054);
+    this.lightProbe=daylight(this.scene,!this.isCave);
+    a.skyReflection=this.lightProbe;
     this.camera=new THREE.PerspectiveCamera(64,16/9,.06,700);this.camera.position.set(0,2.05,1.7);this.camera.rotation.x=-.055;this.scene.add(this.camera);
-    this.ambient=new THREE.HemisphereLight(this.isIce?0xe7f6ff:this.isCave?0xbad9ee:0xfff7e6,this.isIce?0x91afc9:this.isCave?0x47465d:0x6c9484,this.isCave?1.3:1.8);this.scene.add(this.ambient);
-    this.sun=new THREE.DirectionalLight(this.isCave?0xc5e9ed:0xffebcf,this.isCave?.95:2.5);this.sun.position.set(-14,27,-20);this.sun.castShadow=!this.isCave;
+    this.ambient=new THREE.HemisphereLight(this.isIce?0xe7f6ff:this.isCave?0xbad9ee:0xfff7e6,this.isIce?0x91afc9:this.isCave?0x47465d:0x6d694a,this.isCave?1.3:.95);this.scene.add(this.ambient);
+    this.sun=new THREE.DirectionalLight(this.isCave?0xc5e9ed:0xffebcf,this.isCave?.95:2.85);this.sun.position.set(-14,27,-20);this.sun.castShadow=!this.isCave;
     this.sun.shadow.mapSize.set(1024,1024);Object.assign(this.sun.shadow.camera,{left:-18,right:18,top:25,bottom:-18,near:1,far:85});
-    this.sun.shadow.bias=-.00035;this.sun.shadow.normalBias=.04;this.sun.shadow.radius=3;
+    this.sun.shadow.bias=-.00035;this.sun.shadow.normalBias=.025;this.sun.shadow.radius=3;
     this.scene.add(this.sun,this.sun.target);
-    const fill=new THREE.DirectionalLight(0xc4dfef,.65);fill.position.set(10,9,12);this.scene.add(fill);
+    const fill=new THREE.DirectionalLight(0xc4dfef,.34);fill.position.set(10,9,12);this.scene.add(fill);
     const riderLight=new THREE.PointLight(this.isCave?0xc4efee:0xffe8cb,this.isCave?3.2:1.5,this.isCave?22:5,1.3);riderLight.position.set(-.8,1,-.3);this.camera.add(riderLight);
     this.reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
     this.lastDistance=0;this.lastX=0;this.shadowDistance=null;this.shotTime=0;this.bossHitTime=0;this.bossThrowTime=0;this.celebration=0;this.lastJumpHeight=0;this.lastFlightHeight=0;
@@ -83,7 +80,6 @@ export class MagicForest{
       this.vegetation=a.batch(forestSource);this.scene.add(this.vegetation);
       this.wrapBatches=this.vegetation.children.map(mesh=>{mesh.frustumCulled=false;return {mesh,base:Float32Array.from(mesh.instanceMatrix.array)};});
       this.deepForest=a.deepForest(this.episodeId,this.lavaRows);this.scene.add(this.deepForest);
-      this.foliageTexture=natureTexture(true);for(const mat of a.materials.values())if(mat.name==='foliage'){mat.map=this.foliageTexture;mat.needsUpdate=true;}
     }
     this.selectHorse(options.horseId||HORSES[0].id);
     this.objectMeshes=objects.map(object=>{
@@ -131,23 +127,16 @@ export class MagicForest{
     const position=geometry.attributes.position;
     for(let i=0;i<position.count;i++)position.setY(i,terrainHeightAt(position.getX(i),position.getZ(i)));
     geometry.computeVertexNormals();
-    const ground=new THREE.Mesh(geometry,a.mat(this.isDino?0x7ca887:0x99b78f));this.groundTexture=natureTexture();ground.material.map=this.groundTexture;ground.receiveShadow=true;this.scene.add(ground);
-    a.mesh(this.scene,'box',this.isDino?0xcebb8e:0xe6c998,0,-.055,-RULES.length/2,RULES.halfWidth*2,.11,RULES.length+90).castShadow=false;
+    const ground=new THREE.Mesh(geometry,landscapeSurface(a.mat(0xe1e3c5),'forest_ground_04',64,200));
+    ground.receiveShadow=true;this.scene.add(ground);
+    const trail=landscapeSurface(a.mat(this.isDino?0xc8b696:0xd5c6a5),'dirt_floor',1.3,135);
+    a.mesh(this.scene,'box',trail,0,-.055,-RULES.length/2,RULES.halfWidth*2,.11,RULES.length+90).castShadow=false;
     const edges=new THREE.Group();
     for(let z=0;z<RULES.length+15;z+=1.5)for(const side of [-1,1])a.mesh(edges,'rock',this.isDino?0x91a58c:0xaab697,side*(RULES.halfWidth+.13),.035,-z,.17+random()*.12,.085,.28+random()*.2);
     this.scene.add(a.batch(edges));
   }
   makeSky(){
     const a=this.assets;
-    const material=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,vertexShader:'varying vec3 direction;void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'varying vec3 direction;void main(){float y=pow(max(normalize(direction).y,0.0),.6);vec3 color=mix(vec3(.96,.94,.83),vec3(.62,.82,.87),y);gl_FragColor=vec4(color,1.0);}'});
-    this.sky=new THREE.Mesh(new THREE.SphereGeometry(640,16,12),material);this.sky.renderOrder=-1000;this.scene.add(this.sky);
-    this.skyScenery=new THREE.Group();this.scene.add(this.skyScenery);
-    const random=seeded(91);
-    for(let i=0;i<7;i++){
-      const x=(i-3)*32,y=28+random()*25,z=-130-random()*65;
-      for(let puff=0;puff<3;puff++){const cloud=a.mesh(this.skyScenery,'round',a.mat(0xfff8e9,{fog:false,roughness:1}),x+puff*4,y+(puff%2)*2,z,7,3.0+random()*2,3.5);cloud.castShadow=false;}
-    }
-    this.sunBall=a.mesh(this.skyScenery,'round',new THREE.MeshBasicMaterial({color:0xffe9ba,fog:false}),-65,60,-230,8);this.sunBall.castShadow=false;
     this.skyLandscape=new THREE.Group();this.scene.add(this.skyLandscape);
     for(const [x,y,z,s,color]of [[-95,-17,-60,75,0xa8bda8],[80,-18,-110,85,0xc0cbb8],[-30,-18,-160,100,0xb2c5b7]]){
       const hill=a.mesh(this.skyLandscape,'round',a.mat(color,{fog:false}),x,y,z,s,30,s*.6);hill.castShadow=false;
@@ -221,7 +210,7 @@ export class MagicForest{
     this.camera.rotation.x=ride.pitch+this.giantLook;
     this.cameraRoll=THREE.MathUtils.lerp(this.cameraRoll,this.reducedMotion?0:(game.x-this.lastX)*-.08,1-Math.exp(-10*dt));
     this.camera.rotation.z=this.cameraRoll+Math.sin(time*39)*this.shake*.025;
-    if(this.sky){this.sky.position.copy(this.camera.position);this.skyScenery.position.z=-game.distance;this.skyLandscape.position.set(0,0,-game.distance-80);this.skyLandscape.visible=game.flightHeight>1;}
+    if(this.skyLandscape){this.skyLandscape.position.set(0,0,-game.distance-80);this.skyLandscape.visible=game.flightHeight>1;}
     if(this.caveWorld){
       this.caveWorld.update(game,time,dt);const daylight=game.boss.done?THREE.MathUtils.clamp((game.distance-382)/12,0,1):0;
       this.scene.background.setHex(0x263e4e).lerp(new THREE.Color(0xb9e2df),daylight);this.scene.fog.color.copy(this.scene.background);this.scene.fog.density=.012*(1-daylight)+.006*daylight;this.ambient.intensity=1.3+daylight*.8;this.sun.intensity=.95+daylight*1.3;
@@ -292,7 +281,7 @@ export class MagicForest{
     this.renderer.render(this.scene,this.camera);
   }
   dispose(){
-    this.resizeObserver.disconnect();const geometries=new Set(Object.values(this.assets.geometries)),materials=new Set(this.assets.materials.values()),textures=new Set([this.glow]);
+    this.resizeObserver.disconnect();const geometries=new Set(Object.values(this.assets.geometries)),materials=new Set(this.assets.materials.values()),textures=new Set([this.glow,this.lightProbe]);
     this.scene.traverse(object=>{object.shadow?.map?.dispose();if(object.geometry)geometries.add(object.geometry);for(const mat of(Array.isArray(object.material)?object.material:[object.material]))if(mat){materials.add(mat);for(const value of Object.values(mat))if(value?.isTexture)textures.add(value);}});
     geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());textures.forEach(texture=>texture.dispose());this.renderer.dispose();
   }

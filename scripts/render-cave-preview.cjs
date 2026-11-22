@@ -52,7 +52,7 @@ const server=http.createServer((req,res)=>{
         a.mesh(content,'round',0xe9e5be,x-.13,height+.075,z+.16,.055,.03,.04);
       }
       const camera=new THREE.PerspectiveCamera(35,480/280,.1,200);camera.position.set(10,9.4,14);camera.lookAt(0,1.6,-.1);
-      renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();a.dispose();return data;
+      await a.ready();renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();a.dispose();return data;
     });
     const file=path.join(root,'assets','episode-cave.png');fs.writeFileSync(file,Buffer.from(encoded.split(',')[1],'base64'));console.log('Rendered:',file);
   }finally{await browser.close();server.close();}
