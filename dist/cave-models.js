@@ -30,7 +30,7 @@ export function caveCrystal(a){
 }
 export function caveGolem(a,boss=false){
   const root=new THREE.Group();root.name=boss?'obsidian-guardian':'stone-golem';
-  const stone=boss?0x4b4d66:0x8c9b9b,edge=boss?0x666880:0xa1aeaa,legs=[];
+  const stone=a.mat(boss?0x696980:0xadbab8,{name:'golem-stone'}),edge=a.mat(boss?0x848698:0xc3cbc6,{name:'golem-stone'}),legs=[];
   a.mesh(root,'rock',stone,0,.91,0,.51,.57,.32);
   a.mesh(root,'rock',edge,0,1.27,.01,.48,.30,.35);
   a.mesh(root,'rock',stone,0,1.73,.015,.35,.36,.29);

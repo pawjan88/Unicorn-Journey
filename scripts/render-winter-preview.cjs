@@ -52,7 +52,7 @@ const server=http.createServer((req,res)=>{
           const flake=snowflake(a);flake.scale.setScalar(1.85);flake.position.set(0,.90,3.3);content.add(flake);
           camera.position.set(11,10.4,16);camera.lookAt(0,2.2,-.1);
         }
-        renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();a.dispose();return data;
+        await a.ready();renderer.render(scene,camera);const data=renderer.domElement.toDataURL('image/png');renderer.dispose();a.dispose();return data;
       },mode);
       const file=mode==='card'?path.join(root,'assets','episode-ice.png'):path.resolve(__dirname,'../artifacts/winter-assets/'+mode+'.png');fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,Buffer.from(encoded.split(',')[1],'base64'));console.log('Rendered:',file);
     }

@@ -11,7 +11,7 @@ for(const model of [assets.unicorn(ice),assets.rider(ice)]){
   assert(model.userData.crystal);let coat=0,eyes=0,clearHorn=0;
   model.traverse(part=>{
     if(!part.isMesh)return;
-    assert(!part.material.map,'crystal is shaded volume, not painted artwork');assert(part.material.flatShading);
+    assert(!part.material.map,'crystal is shaded volume, not painted artwork');assert.equal(part.material.flatShading,false);
     if(part.material.name==='ice-unicorn-coat'){coat++;assert(part.material.transparent);assert(part.material.opacity>.6&&part.material.opacity<.8);assert(!part.material.depthWrite);assert.equal(part.material.color.getHexString(),ice.coat.slice(1));}
     if(part.material.name==='ice-unicorn-horn'){clearHorn++;assert.equal(part.material.color.getHexString(),ice.horn.slice(1));}
     if(part.geometry===assets.geometries.eye&&!part.material.transparent)eyes++;
