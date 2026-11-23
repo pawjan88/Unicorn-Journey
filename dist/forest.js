@@ -3,13 +3,13 @@ import * as THREE from './vendor/three.module.js';
 import { RULES, skyHeightAt } from './rules.js?v=17';
 import { HORSES } from './characters.js?v=17';
 import { jumpHeadPose } from './animation.js?v=12';
-import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=17';
+import { LowPolyAssets, RAINBOW, seeded } from './low-poly-models.js?v=18';
 import { riderCameraPose } from './ride-camera.js?v=17';
 import {GIANT} from './giant-encounter.js?v=14';
 import {terrainHeightAt,riverMeander,riverHeightAt} from './environment-profile.js?v=14';
-import {CaveWorld} from './cave-world.js?v=16';
-import {caveCrystal,caveGolem,crystalCrab,crystalLizard,caveBat,crystalTurtle,caveObstacle} from './cave-models.js?v=16';
-import {WinterWorld} from './winter-world.js?v=17';
+import {CaveWorld} from './cave-world.js?v=18';
+import {caveCrystal,caveGolem,crystalCrab,crystalLizard,caveBat,crystalTurtle,caveObstacle} from './cave-models.js?v=18';
+import {WinterWorld} from './winter-world.js?v=18';
 import {snowflake,snowImp,iceDragon,frostKing,reindeer,snowyOwl,mammoth,winterObstacle} from './winter-models.js?v=17';
 
 const up=new THREE.Vector3(0,1,0);

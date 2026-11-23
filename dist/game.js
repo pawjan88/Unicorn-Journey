@@ -134,10 +134,10 @@ function rebuildForest() {
   forest=new forest.constructor($('#world'),game.objects,game.herds,{witches:game.witches,horseId:game.horseId,episodeId:game.episodeId});
 }
 function bindStart() {
-  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img class="episode-image" src="assets/episode-${episode.id}.png" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
+  $('#episode-picker').innerHTML=Object.values(EPISODES).map((episode,index)=>`<button type="button" class="horse-option episode-option" id="episode-${episode.id}" aria-label="Epizod ${index+1}: ${episode.name}" aria-pressed="${game.episodeId===episode.id}"><img class="episode-image" src="assets/episode-${episode.id}.png?v=18" alt=""><strong><span>${index+1}.</span> ${episode.name}</strong></button>`).join('');
   Object.values(EPISODES).forEach(episode=>{$('#episode-'+episode.id).onclick=()=>game.selectEpisode(episode.id);});
   $('#intro-copy').textContent=game.episode.intro;
-  $('#horse-picker').innerHTML = HORSES.map(horse=>`<button type="button" class="horse-option" id="horse-${horse.id}" aria-label="Wybierz: ${horse.name}" aria-pressed="${game.horseId===horse.id}"><img src="assets/${horse.portrait}" alt=""><strong>${horse.name}</strong><span class="horse-colors" aria-hidden="true"><i style="background:${horse.coat}"></i><i style="background:${horse.hooves}"></i><i style="background:${horse.horn}"></i></span></button>`).join('');
+  $('#horse-picker').innerHTML = HORSES.map(horse=>`<button type="button" class="horse-option" id="horse-${horse.id}" aria-label="Wybierz: ${horse.name}" aria-pressed="${game.horseId===horse.id}"><img src="assets/${horse.portrait}?v=18" alt=""><strong>${horse.name}</strong><span class="horse-colors" aria-hidden="true"><i style="background:${horse.coat}"></i><i style="background:${horse.hooves}"></i><i style="background:${horse.horn}"></i></span></button>`).join('');
   HORSES.forEach(horse=>{$('#horse-'+horse.id).onclick=()=>game.selectHorse(horse.id);});
   $('#play').onclick=start;$('#play').disabled=!forest;if(forest)$('#play').innerHTML='Ruszamy po przygodę! <span>→</span>';refreshHorseChoices();
 }
@@ -209,7 +209,7 @@ function frame(timestamp) {
   confetti.update(visualDt);
   requestAnimationFrame(frame);
 }
-import('./forest.js?v=17').then(async ({ MagicForest }) => {
+import('./forest.js?v=18').then(async ({ MagicForest }) => {
   await document.fonts?.ready;
   await MagicForest.prepare();
   forest = new MagicForest($('#world'), game.objects, game.herds, { witches:game.witches, horseId:game.horseId, episodeId:game.episodeId });

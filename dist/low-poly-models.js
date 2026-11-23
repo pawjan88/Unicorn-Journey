@@ -2,7 +2,7 @@ import {horseFace,maneLock,leafCrown,horseBody,horseLeg,spiralHorn,contactDisc,p
 import {landscapeSurface,surfaceTexture} from './nature-surfaces.js';
 import * as THREE from './vendor/three.module.js';
 import { HORSES } from './characters.js?v=17';
-import {crystallizeHorse} from './ice-horse.js?v=17';
+import {crystallizeHorse} from './ice-horse.js?v=18';
 import {riverMeander,riverHeightAt,terrainHeightAt} from './environment-profile.js?v=14';
 
 export const RAINBOW=[0xf28b95,0xf3ac6d,0xf4d77d,0x8fc8ab,0x7ab6d2,0xb39cce];
